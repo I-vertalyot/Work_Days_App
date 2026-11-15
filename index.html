@@ -45,20 +45,23 @@ body{background:#1B1F22;font-family:var(--sans);color:var(--ink);-webkit-font-sm
 }
 
 /* ---------- folder tabs ---------- */
-.tabs{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding:0 92px 0 28px}
+.tabs{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 0 10px}
 .tab{
-  appearance:none;display:inline-flex;align-items:center;gap:8px;
-  min-height:46px;padding:0 20px;border:0;border-radius:10px 10px 0 0;
-  background:var(--tab);color:var(--ink);
-  font:700 17px/1 var(--sans);font-stretch:75%;cursor:pointer;
+  appearance:none;display:inline-grid;place-items:center;
+  width:48px;height:48px;padding:0;border:0;border-radius:50%;
+  background:transparent;cursor:pointer;
   transition:background-color .15s;
 }
-.tab:hover{background:var(--tab-hover)}
-.tab svg{width:16px;height:16px;flex:none}
-.tab-prev{padding-left:14px}
-.tab-next{padding-right:14px}
-.tab-today{color:var(--red);font-weight:800}
-.tab[hidden]{display:none}
+.tab:hover{background:rgba(226,203,148,.12)}
+.tab:active{background:rgba(226,203,148,.22)}
+.tab svg{width:26px;height:26px}
+.tab-today{
+  width:auto;height:40px;padding:0 16px;border-radius:999px;
+  border:1.5px solid rgba(226,203,148,.5);
+  color:#E2CB94;font:700 16px/1 var(--sans);font-stretch:80%;
+}
+.tab-today[hidden]{display:none}
+.tabs .spacer{flex:1}
 
 /* ---------- the card ---------- */
 .card{
@@ -70,7 +73,12 @@ body{background:#1B1F22;font-family:var(--sans);color:var(--ink);-webkit-font-sm
   clip-path:polygon(0 0, calc(100% - 48px) 0, 100% 48px, 100% 100%, 0 100%);
 }
 .card.swap{animation:swap .28s ease-out}
+.card.swap-next{animation:swapNext .28s ease-out}
+.card.swap-prev{animation:swapPrev .28s ease-out}
 @keyframes swap{from{transform:translateY(8px) rotate(-.25deg);opacity:.35}to{transform:none;opacity:1}}
+@keyframes swapNext{from{transform:translateX(40px) rotate(.4deg);opacity:.3}to{transform:none;opacity:1}}
+@keyframes swapPrev{from{transform:translateX(-40px) rotate(-.4deg);opacity:.3}to{transform:none;opacity:1}}
+.card{touch-action:pan-y}
 
 .card-head{
   display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
@@ -218,22 +226,19 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 /* ---------- focus ---------- */
 :focus{outline:none}
 :focus-visible{outline:2px solid var(--pen);outline-offset:3px;border-radius:4px}
-.tab:focus-visible{outline-color:#F0E2BC;outline-offset:2px}
+.tab:focus-visible{outline-color:#F0E2BC;outline-offset:2px;border-radius:999px}
 .venue:focus-visible,.xh:focus-visible{outline-offset:2px}
 
 @media (prefers-reduced-motion:reduce){
-  .card.swap{animation:none}
+  .card.swap,.card.swap-next,.card.swap-prev{animation:none}
   .status[data-tone="busy"]::before{animation:none}
 }
 
 /* ---------- phone ---------- */
 @media (max-width:720px){
   .desk{padding:22px 12px 48px}
-  .tabs{gap:6px;padding:0 40px 0 8px}
-  .tab{min-height:44px;padding:0 12px;font-size:15px;gap:4px;border-radius:9px 9px 0 0}
-  .tab svg{width:14px;height:14px}
-  .tab-prev{padding-left:8px}
-  .tab-next{padding-right:8px}
+  .tabs{padding-bottom:6px}
+  .tab-today{height:38px;font-size:15px}
   .card{padding:22px 16px 18px;clip-path:polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%)}
   .card-head{gap:12px;padding-bottom:14px}
   .card-head > div:first-child{min-width:0}
@@ -277,8 +282,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .status{margin-top:150px;font-size:14px}
 }
 @media (max-width:360px){
-  .tabs{padding-right:34px}
-  .tab{padding:0 9px;font-size:14px}
+
   .row{grid-template-columns:40px minmax(0,1fr) auto}
   .ddate{font-size:16px}
   .hole{width:38px;height:44px}
@@ -294,14 +298,14 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 <main class="desk">
   <div class="card-wrap">
     <nav class="tabs" aria-label="Weeks">
-      <button type="button" class="tab tab-prev" id="prevBtn">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="#1D1B18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span id="prevLabel">Previous week</span>
+      <button type="button" class="tab" id="prevBtn" aria-label="Previous week" title="Previous week">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
+      <span class="spacer"></span>
       <button type="button" class="tab tab-today" id="todayBtn" hidden>Back to this week</button>
-      <button type="button" class="tab tab-next" id="nextBtn">
-        <span id="nextLabel">Next week</span>
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="#1D1B18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="spacer"></span>
+      <button type="button" class="tab" id="nextBtn" aria-label="Next week" title="Next week">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </nav>
 
@@ -629,8 +633,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     var today = atMidnight(new Date());
     $("weekNo").textContent = isoWeek(monday);
     $("range").textContent = rangeLabel(monday, sunday);
-    $("prevLabel").textContent = "Week " + isoWeek(addDays(monday, -7));
-    $("nextLabel").textContent = "Week " + isoWeek(addDays(monday, 7));
     $("prevBtn").setAttribute("aria-label", "Previous week, week " + isoWeek(addDays(monday, -7)));
     $("nextBtn").setAttribute("aria-label", "Next week, week " + isoWeek(addDays(monday, 7)));
     $("todayBtn").hidden = +mondayOf(today) === +monday;
@@ -648,7 +650,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       r.xplus.setAttribute("aria-label", "One hour more, " + r.long);
     });
     refreshValues();
-    if (animate) swap();
+    if (animate) swap(animate);
   }
 
   function refreshValues(){
@@ -719,12 +721,12 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     list.forEach(function (v){ var o = document.createElement("option"); o.value = v; dl.appendChild(o); });
   }
 
-  function swap(){
+  function swap(dir){
     if (reduceMotion) return;
     var c = $("card");
-    c.classList.remove("swap");
+    c.classList.remove("swap", "swap-next", "swap-prev");
     void c.offsetWidth;
-    c.classList.add("swap");
+    c.classList.add(dir === 1 ? "swap-next" : dir === -1 ? "swap-prev" : "swap");
   }
 
   var lastDay = atMidnight(new Date()).getTime();
@@ -931,8 +933,27 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   /* ---------- navigation ---------- */
   function go(deltaWeeks){
     monday = addDays(monday, 7 * deltaWeeks);
-    renderWeek(true);
+    renderWeek(deltaWeeks > 0 ? 1 : -1);
   }
+
+  /* swipe left / right on the card to change week */
+  var sx = null, sy = 0, st = 0;
+  var cardEl = $("card");
+  cardEl.addEventListener("touchstart", function (e){
+    if (e.touches.length !== 1){ sx = null; return; }
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now();
+  }, { passive: true });
+  cardEl.addEventListener("touchend", function (e){
+    if (sx === null) return;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - sx, dy = t.clientY - sy;
+    sx = null;
+    if (Date.now() - st > 800) return;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (document.activeElement && document.activeElement.tagName === "INPUT") document.activeElement.blur();
+    go(dx < 0 ? 1 : -1);
+  }, { passive: true });
+  cardEl.addEventListener("touchcancel", function (){ sx = null; }, { passive: true });
   $("prevBtn").addEventListener("click", function (){ go(-1); });
   $("nextBtn").addEventListener("click", function (){ go(1); });
   $("todayBtn").addEventListener("click", function (){

@@ -10,7 +10,7 @@ Each card is one week, Monday to Sunday, with the real dates. For every day you 
 
 The card adds up the week, and the red stamp in the corner shows the total for the month.
 
-Move between weeks with the folder tabs on top of the card, or with the ← → keys.
+Move between weeks with the arrows above the card, by swiping the card left or right on a phone, or with the ← → keys.
 
 ## Running it
 
