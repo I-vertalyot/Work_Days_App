@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Work days</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playwrite+CZ:wght@300;400&display=swap">
+<style>
+:root{
+  --ink:#1D1B18;
+  --ink-soft:#4A4337;
+  --rule:rgba(29,27,24,.32);
+  --red:#A82614;
+  --pen:#23409A;
+  --desk:#23282C;
+  --tab:#E2CB94;
+  --tab-hover:#EBD7A6;
+  --sans:"Archivo",system-ui,sans-serif;
+  --stencil:"Big Shoulders Stencil","Archivo",sans-serif;
+  --hand:"Playwrite CZ","Segoe Script","Bradley Hand",cursive;
+  --cols:104px minmax(0,1fr) 200px 182px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#1B1F22;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.stencil{font-family:var(--stencil);font-weight:800;line-height:1}
+
+/* ---------- the desk ---------- */
+.desk{
+  min-height:100vh;
+  padding:64px 24px 190px;
+  overflow-x:hidden;overflow-x:clip;
+  display:flex;flex-direction:column;align-items:center;
+  background:radial-gradient(ellipse 75% 55% at 50% 0%, #3B444A 0%, #262B2F 55%, #1B1F22 100%);
+}
+.card-wrap{
+  position:relative;width:100%;max-width:1040px;
+  filter:drop-shadow(0 30px 34px rgba(0,0,0,.55)) drop-shadow(0 4px 6px rgba(0,0,0,.35));
+}
+
+/* ---------- folder tabs ---------- */
+.tabs{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding:0 92px 0 28px}
+.tab{
+  appearance:none;display:inline-flex;align-items:center;gap:8px;
+  min-height:46px;padding:0 20px;border:0;border-radius:10px 10px 0 0;
+  background:var(--tab);color:var(--ink);
+  font:700 17px/1 var(--sans);font-stretch:75%;cursor:pointer;
+  transition:background-color .15s;
+}
+.tab:hover{background:var(--tab-hover)}
+.tab svg{width:16px;height:16px;flex:none}
+.tab-prev{padding-left:14px}
+.tab-next{padding-right:14px}
+.tab-today{color:var(--red);font-weight:800}
+.tab[hidden]{display:none}
+
+/* ---------- the card ---------- */
+.card{
+  position:relative;
+  padding:34px 44px 26px;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' seed='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42  0 0 0 0 .33  0 0 0 0 .18  0 0 0 .13 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"),
+    linear-gradient(180deg, #EFDFB5 0%, #E8D4A3 50%, #E1C990 100%);
+  clip-path:polygon(0 0, calc(100% - 48px) 0, 100% 48px, 100% 100%, 0 100%);
+}
+.card.swap{animation:swap .28s ease-out}
+@keyframes swap{from{transform:translateY(8px) rotate(-.25deg);opacity:.35}to{transform:none;opacity:1}}
+
+.card-head{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
+  padding-bottom:18px;border-bottom:3px solid var(--ink);
+}
+.card-head h1{margin:0;font-size:72px;line-height:.86;font-weight:900;font-stretch:62%;letter-spacing:-.005em}
+.range{margin:12px 0 0;font-size:20px;font-weight:600;font-stretch:85%}
+.weekbox{display:flex;align-items:stretch;border:2px solid var(--ink);flex:none}
+.wb-label{
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:8px 12px;border-right:2px solid var(--ink);
+  font-size:13px;font-weight:700;font-stretch:75%;
+}
+.wb-num{padding:2px 16px 0;font-weight:900;font-size:60px}
+
+.cols{
+  display:grid;grid-template-columns:var(--cols);
+  padding:10px 0 8px;border-bottom:1.5px solid var(--ink);
+  font-size:14px;font-weight:700;font-stretch:75%;
+}
+.cols span:nth-child(2){padding-left:18px}
+.cols span:nth-child(3){padding-left:14px}
+.cols span:nth-child(4){padding-left:16px;color:var(--red)}
+
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.rows{list-style:none;margin:0;padding:0}
+.row{
+  display:grid;grid-template-columns:var(--cols);
+  min-height:68px;border-bottom:1px solid var(--rule);
+}
+.row.weekend{background:rgba(168,38,20,.05)}
+.row > div + div{border-left:1px solid var(--rule)}
+
+.day{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 0 6px 2px}
+.dname{font-size:14px;font-weight:700;font-stretch:75%}
+.ddate{font-size:28px;letter-spacing:.01em}
+.today-ring{position:absolute;left:-12px;top:3px;width:92px;height:62px;pointer-events:none;display:none}
+.today-ring path{fill:none;stroke:var(--pen);stroke-width:2.2px;stroke-linecap:round;opacity:.9}
+.row.is-today .today-ring{display:block}
+
+.venue-cell{display:flex;align-items:center;padding:0 18px}
+.venue{
+  width:100%;min-width:0;border:0;background:transparent;border-radius:0;
+  padding:12px 0;
+  font:400 18px/1.4 var(--hand);color:var(--pen);
+}
+.venue::placeholder{color:rgba(29,27,24,.38);opacity:1}
+
+.days-cell{display:flex;align-items:center;gap:2px;padding:0 8px 0 10px}
+.hole{
+  appearance:none;display:grid;place-items:center;
+  width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer;
+  border-radius:50%;
+}
+.ring{
+  position:relative;display:block;width:30px;height:30px;border-radius:50%;
+  border:1.5px solid rgba(29,27,24,.42);overflow:hidden;
+  transition:border-color .15s;
+}
+.hole:hover .ring{border-color:rgba(29,27,24,.85)}
+.punch{position:absolute;display:none;background:var(--desk)}
+.ring[data-fill="0.5"] .punch{
+  display:block;left:-2px;top:-2px;width:16.5px;height:32px;
+  box-shadow:inset 2px 3px 4px rgba(0,0,0,.8);
+}
+.ring[data-fill="1"]{border-color:transparent;box-shadow:0 1px 0 rgba(255,250,232,.75)}
+.ring[data-fill="1"] .punch{
+  display:block;inset:-2px;border-radius:50%;
+  box-shadow:inset 0 3px 5px rgba(0,0,0,.85);
+}
+.hole:active .ring{transform:scale(.92)}
+.dval{
+  margin-left:auto;min-width:42px;text-align:right;font-size:28px;
+  border-radius:4px;padding:2px;cursor:ns-resize;user-select:none;
+}
+.dval.zero{opacity:.28}
+
+.extra-cell{display:flex;flex-direction:column;justify-content:center;padding:0 10px 0 12px}
+.xstep{display:flex;align-items:center;gap:4px}
+.xbtn{
+  appearance:none;flex:none;display:grid;place-items:center;
+  width:40px;height:40px;padding:0;cursor:pointer;
+  background:transparent;border:1.5px solid rgba(168,38,20,.5);border-radius:7px;
+  transition:background-color .15s,border-color .15s,opacity .15s;
+}
+.xbtn svg{width:14px;height:14px}
+.xbtn:hover{background:rgba(168,38,20,.08);border-color:var(--red)}
+.xbtn:active{background:rgba(168,38,20,.16)}
+.xbtn:disabled{opacity:.3;cursor:default;background:transparent;border-color:rgba(168,38,20,.5)}
+.extra{display:flex;align-items:baseline;gap:3px;color:var(--red);cursor:text}
+.extra .unit{font-weight:700;font-size:16px}
+.xh{
+  width:36px;border:0;border-bottom:1.5px dotted var(--red);border-radius:0;background:transparent;
+  padding:4px 2px 2px;text-align:right;
+  font-family:var(--stencil);font-weight:800;font-size:28px;color:var(--red);
+}
+.xh::placeholder{color:rgba(168,38,20,.4);opacity:1}
+.xh[aria-invalid="true"]{border-bottom-style:dashed;border-bottom-width:2px}
+.xhint{display:none;margin-top:3px;font-size:12px;font-weight:600;color:var(--red)}
+.extra-cell.bad .xhint{display:block}
+
+.totals{
+  display:grid;grid-template-columns:var(--cols);align-items:baseline;
+  padding:16px 0 14px;border-top:2px solid var(--ink);margin-top:-1px;
+}
+.t-label{grid-column:1 / 3;font-size:24px;font-weight:800;font-stretch:70%}
+.t-days{padding-left:14px;font-weight:900;font-size:38px}
+.t-extra{padding-left:16px;color:var(--red);font-weight:900;font-size:38px}
+.totals small{margin-left:6px;font-family:var(--sans);font-weight:700;font-size:16px;font-stretch:80%}
+.t-extra small{margin-left:4px}
+
+.fine{
+  display:flex;justify-content:space-between;gap:24px;
+  padding-top:10px;border-top:1px solid var(--rule);
+  font-size:14px;font-weight:600;font-stretch:85%;color:var(--ink-soft);
+}
+.fine span:last-child{padding-right:170px}
+
+/* ---------- month stamp ---------- */
+.stamp{
+  position:absolute;right:-34px;bottom:-150px;width:210px;height:210px;
+  transform:rotate(-13deg);mix-blend-mode:multiply;opacity:.9;pointer-events:none;
+}
+.stamp .ring-o{fill:none;stroke:var(--red);stroke-width:6px}
+.stamp .ring-i{fill:none;stroke:var(--red);stroke-width:2px}
+.stamp text{fill:var(--red);font-family:var(--sans)}
+.stamp .s-ring{font-stretch:75%;font-weight:800;font-size:16px;letter-spacing:1.5px}
+.stamp .s-num{font-family:var(--stencil);font-weight:900;font-size:58px}
+.stamp .s-word{font-stretch:80%;font-weight:800;font-size:15px}
+.stamp .s-extra{font-stretch:80%;font-weight:700;font-size:13px}
+
+/* ---------- save status, on the desk ---------- */
+.status{
+  width:100%;max-width:1040px;margin:34px 0 0;
+  display:flex;align-items:center;gap:9px;
+  font-size:15px;font-weight:600;font-stretch:85%;color:#E3D3AE;
+}
+.status::before{content:"";width:9px;height:9px;border-radius:50%;flex:none;background:#9C8C68}
+.status[data-tone="ok"]::before{background:#7DB36B}
+.status[data-tone="busy"]::before{background:#E2CB94;animation:pulse 1s ease-in-out infinite}
+.status[data-tone="warn"]{color:#F0A08F}
+.status[data-tone="warn"]::before{background:#E0533B}
+@keyframes pulse{50%{opacity:.3}}
+
+/* ---------- focus ---------- */
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--pen);outline-offset:3px;border-radius:4px}
+.tab:focus-visible{outline-color:#F0E2BC;outline-offset:2px}
+.venue:focus-visible,.xh:focus-visible{outline-offset:2px}
+
+@media (prefers-reduced-motion:reduce){
+  .card.swap{animation:none}
+  .status[data-tone="busy"]::before{animation:none}
+}
+
+/* ---------- phone ---------- */
+@media (max-width:720px){
+  .desk{padding:22px 12px 48px}
+  .tabs{gap:6px;padding:0 40px 0 8px}
+  .tab{min-height:44px;padding:0 12px;font-size:15px;gap:4px;border-radius:9px 9px 0 0}
+  .tab svg{width:14px;height:14px}
+  .tab-prev{padding-left:8px}
+  .tab-next{padding-right:8px}
+  .card{padding:22px 16px 18px;clip-path:polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%)}
+  .card-head{gap:12px;padding-bottom:14px}
+  .card-head > div:first-child{min-width:0}
+  .card-head h1{font-size:52px}
+  .range{margin-top:9px;font-size:16px}
+  .wb-label{padding:5px 8px;font-size:11px}
+  .wb-num{padding:2px 10px 0;font-size:44px}
+  .cols{display:none}
+  .row{
+    grid-template-columns:66px minmax(0,1fr) auto;
+    grid-template-areas:"day venue venue" "days days extra";
+    column-gap:8px;min-height:0;padding:8px 0 4px;
+  }
+  .row > div + div{border-left:0}
+  .day{grid-area:day;padding:0 0 0 2px;gap:1px}
+  .dname{font-size:13px}
+  .ddate{font-size:23px}
+  .today-ring{left:-10px;top:-4px;width:78px;height:54px}
+  .venue-cell{grid-area:venue;padding:0;border-bottom:1px dashed rgba(29,27,24,.28)}
+  .venue{font-size:17px;padding:10px 0 8px}
+  .days-cell{grid-area:days;padding:2px 0 0;gap:0}
+  .ring{width:28px;height:28px}
+  .ring[data-fill="0.5"] .punch{width:15.5px;height:30px}
+  .dval{margin-left:4px;min-width:34px;text-align:left;font-size:24px}
+  .extra-cell{grid-area:extra;padding:2px 0 0;align-items:flex-end}
+  .xstep{gap:3px}
+  .xbtn{width:38px;height:38px}
+  .extra{gap:2px}
+  .extra .unit{font-size:15px}
+  .xh{width:32px;font-size:25px;padding-top:6px}
+  .totals{display:flex;gap:14px;padding:14px 0 12px}
+  .t-label{font-size:21px}
+  .t-days{margin-left:auto;padding-left:0;font-size:32px}
+  .t-extra{padding-left:0;font-size:32px}
+  .totals small{font-size:14px;margin-left:5px}
+  .t-extra small{margin-left:3px}
+  .fine{flex-direction:column;gap:4px;padding-right:112px;font-size:13px;line-height:1.3}
+  .fine span:last-child{padding-right:0}
+  .stamp{width:164px;height:164px;right:-6px;bottom:-128px}
+  .status{margin-top:150px;font-size:14px}
+}
+@media (max-width:360px){
+  .tabs{padding-right:34px}
+  .tab{padding:0 9px;font-size:14px}
+  .row{grid-template-columns:60px minmax(0,1fr) auto}
+  .ddate{font-size:21px}
+  .hole{width:38px;height:44px}
+  .ring{width:26px;height:26px}
+  .ring[data-fill="0.5"] .punch{width:14.5px;height:28px}
+  .dval{min-width:28px;font-size:22px}
+  .xbtn{width:36px;height:36px}
+  .xh{width:30px;font-size:23px}
+}
+</style>
+</head>
+<body>
+<main class="desk">
+  <div class="card-wrap">
+    <nav class="tabs" aria-label="Weeks">
+      <button type="button" class="tab tab-prev" id="prevBtn">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="#1D1B18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="prevLabel">Previous week</span>
+      </button>
+      <button type="button" class="tab tab-today" id="todayBtn" hidden>Back to this week</button>
+      <button type="button" class="tab tab-next" id="nextBtn">
+        <span id="nextLabel">Next week</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="#1D1B18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </nav>
+
+    <section class="card" id="card" aria-labelledby="cardTitle">
+      <header class="card-head">
+        <div>
+          <h1 id="cardTitle">Time card</h1>
+          <p class="range" id="range"></p>
+        </div>
+        <div class="weekbox" aria-label="Week number">
+          <div class="wb-label" aria-hidden="true"><span>Week</span><span>No.</span></div>
+          <div class="wb-num stencil" id="weekNo"></div>
+        </div>
+      </header>
+
+      <div class="cols" aria-hidden="true">
+        <span>Day</span><span>Venue</span><span>Days worked</span><span>Extra hours</span>
+      </div>
+
+      <fieldset id="rowsField">
+        <legend class="sr-only">Days of the week</legend>
+        <ol class="rows" id="rows"></ol>
+      </fieldset>
+
+      <div class="totals">
+        <span class="t-label">Week total</span>
+        <span class="t-days stencil" id="totDays"></span>
+        <span class="t-extra stencil" id="totExtra"></span>
+      </div>
+
+      <footer class="fine">
+        <span>Punch a hole once for half a day, again for a full day.</span>
+        <span>Extra hours are entered in red.</span>
+      </footer>
+    </section>
+
+    <svg class="stamp" id="stamp" viewBox="0 0 210 210" role="img" aria-label="Month total">
+      <filter id="ink"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/></filter>
+      <g filter="url(#ink)">
+        <circle class="ring-o" cx="105" cy="105" r="96"/>
+        <circle class="ring-i" cx="105" cy="105" r="70"/>
+        <path id="stampRing" d="M105 23a82 82 0 1 1-.01 0" fill="none"/>
+        <text class="s-ring"><textPath href="#stampRing" textLength="505" lengthAdjust="spacing" id="stampText"></textPath></text>
+        <text class="s-num" x="105" y="118" text-anchor="middle" id="stampNum">0</text>
+        <text class="s-word" x="105" y="142" text-anchor="middle" id="stampWord">days</text>
+        <text class="s-extra" x="105" y="160" text-anchor="middle" id="stampExtra">+0 h extra</text>
+      </g>
+    </svg>
+  </div>
+
+  <p class="status" id="status" role="status" data-tone="busy">Opening your log…</p>
+  <datalist id="venues"></datalist>
+</main>
+
+<script>
+"use strict";
+(function () {
+  var DAY_LONG = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  var DAY_SHORT = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var MAX_DAYS = 3, STEP = 0.5, MAX_HOURS = 3, MAX_VENUE = 80;
+  var LS_KEY = "workdays.v1";
+  var FIELDS = ["v","d","x"];
+
+  function $(id){ return document.getElementById(id); }
+  var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  /* ---------- dates (local time) ---------- */
+  function atMidnight(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d, n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function mondayOf(d){ var x = atMidnight(d); return addDays(x, -((x.getDay() + 6) % 7)); }
+  function pad(n){ return (n < 10 ? "0" : "") + n; }
+  function keyOf(m){ return "w-" + m.getFullYear() + "-" + pad(m.getMonth() + 1) + "-" + pad(m.getDate()); }
+  function parseKey(k){
+    var m = /^w-(\d{4})-(\d{2})-(\d{2})$/.exec(k);
+    if (!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return d.getDay() === 1 ? d : null;
+  }
+  function dm(d){ return d.getDate() + "." + (d.getMonth() + 1) + "."; }
+  function isoWeek(d){
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var dayNum = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - dayNum);
+    var yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil(((t - yearStart) / 86400000 + 1) / 7);
+  }
+  function rangeLabel(mon, sun){
+    if (mon.getFullYear() !== sun.getFullYear())
+      return mon.getDate() + " " + MONTHS[mon.getMonth()] + " " + mon.getFullYear() + " – " + sun.getDate() + " " + MONTHS[sun.getMonth()] + " " + sun.getFullYear();
+    if (mon.getMonth() !== sun.getMonth())
+      return mon.getDate() + " " + MONTHS[mon.getMonth()] + " – " + sun.getDate() + " " + MONTHS[sun.getMonth()] + " " + sun.getFullYear();
+    return mon.getDate() + "–" + sun.getDate() + " " + MONTHS[sun.getMonth()] + " " + sun.getFullYear();
+  }
+
+  /* ---------- numbers ---------- */
+  function clampDays(n){ n = Number(n); return isFinite(n) ? Math.min(MAX_DAYS, Math.max(0, Math.round(n / STEP) * STEP)) : 0; }
+  function clampHours(n){ n = Number(n); return isFinite(n) ? Math.min(MAX_HOURS, Math.max(0, Math.round(n))) : 0; }
+  function fmtNum(n){ return String(Math.round(n * 100) / 100); }
+  function fmtHours(x){ return x ? String(x) : ""; }
+  function parseHours(s){
+    s = String(s).trim();
+    if (s === "") return 0;
+    if (!/^\d$/.test(s)) return null;
+    var n = +s;
+    return n > MAX_HOURS ? null : n;
+  }
+  function daysWord(n){ return n === 1 ? "day" : "days"; }
+
+  /* ---------- data ---------- */
+  function emptyWeek(){ var a = []; for (var i = 0; i < 7; i++) a.push({ v: "", d: 0, x: 0 }); return { days: a }; }
+  var EMPTY = emptyWeek();
+  function clean(raw){
+    var out = emptyWeek();
+    var arr = raw && Array.isArray(raw.days) ? raw.days : [];
+    for (var i = 0; i < 7; i++){
+      var r = arr[i] && typeof arr[i] === "object" ? arr[i] : {};
+      out.days[i].v = typeof r.v === "string" ? r.v.slice(0, MAX_VENUE) : "";
+      out.days[i].d = clampDays(r.d);
+      out.days[i].x = clampHours(r.x);
+    }
+    return out;
+  }
+  function isEmptyWeek(w){ return w.days.every(function (x){ return !x.v.trim() && !x.d && !x.x; }); }
+
+  var weeks = {};
+  var monday = mondayOf(new Date());
+  var mode = "connecting";        // connecting | account | local | memory | readonly
+  var ready = false;
+  var col = null;
+  var dirty = new Map();
+  var ver = 0;
+  var timers = {};
+  var chains = {};
+  var inflight = 0;
+  var problem = null;
+  var unreachable = false;
+
+  function getWeek(k, create){
+    if (weeks[k]) return weeks[k];
+    if (!create) return null;
+    weeks[k] = emptyWeek();
+    return weeks[k];
+  }
+  function currentWeek(){ return getWeek(keyOf(monday), false) || EMPTY; }
+
+  function applyIncoming(k, raw){
+    var inc = clean(raw);
+    var w = getWeek(k, true);
+    for (var i = 0; i < 7; i++){
+      for (var f = 0; f < 3; f++){
+        var fld = FIELDS[f];
+        if (!dirty.has(k + "|" + i + "|" + fld)) w.days[i][fld] = inc.days[i][fld];
+      }
+    }
+  }
+  function dirtyKeys(){
+    var s = new Set();
+    dirty.forEach(function (_v, key){ s.add(key.split("|")[0]); });
+    return Array.from(s);
+  }
+
+  /* ---------- rows ---------- */
+  var rowsEl = $("rows");
+  var rows = [];
+  var NS = "http://www.w3.org/2000/svg";
+
+  function el(tag, cls, attrs){
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (attrs) for (var a in attrs) e.setAttribute(a, attrs[a]);
+    return e;
+  }
+
+  function buildRows(){
+    for (var i = 0; i < 7; i++) (function (i){
+      var li = el("li", "row");
+
+      var day = el("div", "day");
+      var name = el("span", "dname");
+      var date = el("span", "ddate stencil");
+      var ring = document.createElementNS(NS, "svg");
+      ring.setAttribute("class", "today-ring");
+      ring.setAttribute("viewBox", "0 0 92 62");
+      ring.setAttribute("aria-hidden", "true");
+      var rp = document.createElementNS(NS, "path");
+      rp.setAttribute("d", "M18 46c-12-8-10-26 10-33 20-7 50-4 56 12 6 16-16 28-40 29-14 1-28-3-33-10");
+      ring.appendChild(rp);
+      day.appendChild(name); day.appendChild(date); day.appendChild(ring);
+
+      var vcell = el("div", "venue-cell");
+      var venue = el("input", "venue", { type: "text", list: "venues", placeholder: "Venue", maxlength: String(MAX_VENUE), autocomplete: "off", spellcheck: "false" });
+      vcell.appendChild(venue);
+
+      var dcell = el("div", "days-cell");
+      var holes = [];
+      for (var h = 0; h < 3; h++){
+        var btn = el("button", "hole", { type: "button", tabindex: "-1" });
+        var rg = el("span", "ring", { "data-fill": "0" });
+        rg.appendChild(el("span", "punch"));
+        btn.appendChild(rg);
+        dcell.appendChild(btn);
+        holes.push({ btn: btn, ring: rg });
+      }
+      var val = el("span", "dval stencil", { role: "spinbutton", tabindex: "0", "aria-valuemin": "0", "aria-valuemax": String(MAX_DAYS) });
+      dcell.appendChild(val);
+
+      var xcell = el("div", "extra-cell");
+      var xstep = el("div", "xstep");
+      var xminus = el("button", "xbtn", { type: "button", tabindex: "-1" });
+      xminus.innerHTML = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7h9" fill="none" stroke="#A82614" stroke-width="2.4" stroke-linecap="round"/></svg>';
+      var extra = el("label", "extra");
+      var xh = el("input", "xh", { type: "text", inputmode: "numeric", placeholder: "0", maxlength: "1", autocomplete: "off" });
+      var unit = el("span", "unit", { "aria-hidden": "true" }); unit.textContent = "h";
+      extra.appendChild(xh); extra.appendChild(unit);
+      var xplus = el("button", "xbtn", { type: "button", tabindex: "-1" });
+      xplus.innerHTML = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7h9M7 2.5v9" fill="none" stroke="#A82614" stroke-width="2.4" stroke-linecap="round"/></svg>';
+      xstep.appendChild(xminus); xstep.appendChild(extra); xstep.appendChild(xplus);
+      var hint = el("span", "xhint"); hint.textContent = "Type 0, 1, 2 or 3";
+      xcell.appendChild(xstep); xcell.appendChild(hint);
+
+      li.appendChild(day); li.appendChild(vcell); li.appendChild(dcell); li.appendChild(xcell);
+      rowsEl.appendChild(li);
+
+      var r = { li: li, name: name, date: date, venue: venue, holes: holes, val: val, xh: xh, xcell: xcell, xminus: xminus, xplus: xplus };
+      rows.push(r);
+
+      venue.addEventListener("input", function (){
+        if (mode === "readonly") return;
+        var w = getWeek(keyOf(monday), true);
+        var had = w.days[i].v.trim() !== "";
+        setField(i, "v", venue.value.slice(0, MAX_VENUE));
+        if (!had && venue.value.trim() && w.days[i].d === 0){ setField(i, "d", 1); paintDays(r, 1); }
+      });
+      venue.addEventListener("change", function (){
+        var t = venue.value.trim();
+        if (t !== venue.value){ venue.value = t; setField(i, "v", t); }
+        updateVenueList();
+      });
+
+      function setDays(next){
+        if (mode === "readonly") return;
+        next = clampDays(next);
+        if (next === currentWeek().days[i].d) return;
+        setField(i, "d", next);
+        paintDays(r, next);
+      }
+      holes.forEach(function (hole, h){
+        hole.btn.addEventListener("click", function (){
+          var d = currentWeek().days[i].d;
+          setDays(d <= h ? h + 0.5 : (d === h + 0.5 ? h + 1 : h));
+        });
+      });
+      val.addEventListener("keydown", function (e){
+        var k = e.key, d = currentWeek().days[i].d;
+        if (k === "ArrowUp" || k === "ArrowRight" || k === "PageUp" || k === "+") setDays(d + STEP);
+        else if (k === "ArrowDown" || k === "ArrowLeft" || k === "PageDown" || k === "-") setDays(d - STEP);
+        else if (k === "Home") setDays(0);
+        else if (k === "End") setDays(MAX_DAYS);
+        else return;
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      val.addEventListener("wheel", function (e){
+        if (document.activeElement !== val) return;
+        e.preventDefault();
+        setDays(currentWeek().days[i].d + (e.deltaY < 0 ? STEP : -STEP));
+      }, { passive: false });
+
+      function stepHours(dir){
+        if (mode === "readonly") return;
+        var x = currentWeek().days[i].x;
+        var next = clampHours(x + dir);
+        xh.removeAttribute("aria-invalid");
+        xcell.classList.remove("bad");
+        xh.value = fmtHours(next);
+        if (next !== x) setField(i, "x", next);
+        paintHours(r, next);
+      }
+      xminus.addEventListener("click", function (){ stepHours(-1); });
+      xplus.addEventListener("click", function (){ stepHours(1); });
+      xh.addEventListener("keydown", function (e){
+        if (e.key === "ArrowUp"){ e.preventDefault(); stepHours(1); }
+        else if (e.key === "ArrowDown"){ e.preventDefault(); stepHours(-1); }
+      });
+
+      xh.addEventListener("input", function (){
+        if (mode === "readonly") return;
+        var p = parseHours(xh.value);
+        if (p === null){ xh.setAttribute("aria-invalid", "true"); xcell.classList.add("bad"); return; }
+        xh.removeAttribute("aria-invalid");
+        xcell.classList.remove("bad");
+        setField(i, "x", p);
+        paintHours(r, p);
+      });
+      xh.addEventListener("blur", function (){
+        xh.value = fmtHours(currentWeek().days[i].x);
+        xh.removeAttribute("aria-invalid");
+        xcell.classList.remove("bad");
+      });
+    })(i);
+  }
+
+  function paintDays(r, d){
+    r.val.textContent = fmtNum(d);
+    r.val.classList.toggle("zero", d === 0);
+    r.val.setAttribute("aria-valuenow", String(d));
+    r.val.setAttribute("aria-valuetext", fmtNum(d) + " " + daysWord(d));
+    r.holes.forEach(function (hole, h){
+      var fill = Math.max(0, Math.min(1, d - h));
+      hole.ring.setAttribute("data-fill", String(fill));
+      var next = d <= h ? h + 0.5 : (d === h + 0.5 ? h + 1 : h);
+      hole.btn.setAttribute("aria-label", r.long + ": set " + fmtNum(next) + " " + daysWord(next));
+    });
+  }
+
+  function paintHours(r, x){
+    r.xminus.disabled = x <= 0;
+    r.xplus.disabled = x >= MAX_HOURS;
+  }
+
+  /* ---------- painting ---------- */
+  function renderWeek(animate){
+    var sunday = addDays(monday, 6);
+    var today = atMidnight(new Date());
+    $("weekNo").textContent = isoWeek(monday);
+    $("range").textContent = rangeLabel(monday, sunday);
+    $("prevLabel").textContent = "Week " + isoWeek(addDays(monday, -7));
+    $("nextLabel").textContent = "Week " + isoWeek(addDays(monday, 7));
+    $("prevBtn").setAttribute("aria-label", "Previous week, week " + isoWeek(addDays(monday, -7)));
+    $("nextBtn").setAttribute("aria-label", "Next week, week " + isoWeek(addDays(monday, 7)));
+    $("todayBtn").hidden = +mondayOf(today) === +monday;
+    rows.forEach(function (r, i){
+      var d = addDays(monday, i);
+      r.long = DAY_LONG[i] + " " + d.getDate() + " " + MONTHS[d.getMonth()];
+      r.name.textContent = DAY_SHORT[i];
+      r.date.textContent = dm(d);
+      r.li.classList.toggle("is-today", +d === +today);
+      r.li.classList.toggle("weekend", i >= 5);
+      r.venue.setAttribute("aria-label", "Venue, " + r.long);
+      r.val.setAttribute("aria-label", "Days worked, " + r.long);
+      r.xh.setAttribute("aria-label", "Extra hours, " + r.long);
+      r.xminus.setAttribute("aria-label", "One hour less, " + r.long);
+      r.xplus.setAttribute("aria-label", "One hour more, " + r.long);
+    });
+    refreshValues();
+    if (animate) swap();
+  }
+
+  function refreshValues(){
+    var w = currentWeek();
+    rows.forEach(function (r, i){
+      var day = w.days[i];
+      if (document.activeElement !== r.venue && r.venue.value !== day.v) r.venue.value = day.v;
+      paintDays(r, day.d);
+      paintHours(r, day.x);
+      if (document.activeElement !== r.xh){
+        var s = fmtHours(day.x);
+        if (r.xh.value !== s) r.xh.value = s;
+        r.xh.removeAttribute("aria-invalid");
+        r.xcell.classList.remove("bad");
+      }
+    });
+    paintTotals();
+    paintStamp();
+  }
+
+  function paintTotals(){
+    var w = currentWeek(), d = 0, x = 0;
+    w.days.forEach(function (r){ d += r.d; x += r.x; });
+    var td = $("totDays");
+    td.textContent = fmtNum(d);
+    var du = el("small"); du.textContent = daysWord(d); td.appendChild(du);
+    td.setAttribute("aria-label", fmtNum(d) + " " + daysWord(d) + " this week");
+    var te = $("totExtra");
+    te.textContent = "+" + fmtNum(x);
+    var hu = el("small"); hu.textContent = "h"; te.appendChild(hu);
+    te.setAttribute("aria-label", fmtNum(x) + " extra hours this week");
+  }
+
+  function paintStamp(){
+    var thu = addDays(monday, 3);
+    var y = thu.getFullYear(), m = thu.getMonth();
+    var d = 0, x = 0;
+    Object.keys(weeks).forEach(function (k){
+      var mon = parseKey(k);
+      if (!mon) return;
+      for (var i = 0; i < 7; i++){
+        var day = addDays(mon, i);
+        if (day.getFullYear() === y && day.getMonth() === m){ d += weeks[k].days[i].d; x += weeks[k].days[i].x; }
+      }
+    });
+    $("stampText").textContent = MONTHS[m].toUpperCase() + " " + y + "  •  TIME CARD  •  DAYS WORKED  •";
+    $("stampNum").textContent = fmtNum(d);
+    $("stampWord").textContent = daysWord(d);
+    $("stampExtra").textContent = "+" + fmtNum(x) + " h extra";
+    $("stamp").setAttribute("aria-label", MONTHS[m] + " " + y + ": " + fmtNum(d) + " " + daysWord(d) + " worked, " + fmtNum(x) + " extra " + (x === 1 ? "hour" : "hours"));
+  }
+
+  var lastVenues = "";
+  function updateVenueList(){
+    var count = {};
+    Object.keys(weeks).forEach(function (k){
+      weeks[k].days.forEach(function (d){
+        var v = d.v.trim();
+        if (v) count[v] = (count[v] || 0) + 1;
+      });
+    });
+    var list = Object.keys(count).sort(function (a, b){ return count[b] - count[a] || a.localeCompare(b); }).slice(0, 40);
+    var sig = list.join("\n");
+    if (sig === lastVenues) return;
+    lastVenues = sig;
+    var dl = $("venues");
+    dl.innerHTML = "";
+    list.forEach(function (v){ var o = document.createElement("option"); o.value = v; dl.appendChild(o); });
+  }
+
+  function swap(){
+    if (reduceMotion) return;
+    var c = $("card");
+    c.classList.remove("swap");
+    void c.offsetWidth;
+    c.classList.add("swap");
+  }
+
+  var lastDay = atMidnight(new Date()).getTime();
+  function tick(){
+    var dayNow = atMidnight(new Date()).getTime();
+    if (dayNow !== lastDay){ lastDay = dayNow; renderWeek(false); }
+  }
+
+  /* ---------- status ---------- */
+  function setStatus(){
+    var s = $("status"), text, tone;
+    var busy = Object.keys(timers).length > 0 || inflight > 0;
+    if (problem){ text = problem; tone = "warn"; }
+    else if (mode === "connecting"){ text = "Opening your log…"; tone = "busy"; }
+    else if (mode === "readonly"){ text = "You can view this log but not change it"; tone = "warn"; }
+    else if (mode === "memory"){ text = "Not saved: this view can't keep data, so entries clear when you close it"; tone = "warn"; }
+    else if (mode === "local"){ text = busy ? "Saving…" : "Saved in this browser only"; tone = busy ? "busy" : "ok"; }
+    else if (!ready){
+      if (unreachable){ text = "Can't reach your saved log yet. New entries will save once it connects"; tone = "warn"; }
+      else { text = "Opening your log…"; tone = "busy"; }
+    }
+    else { text = busy ? "Saving…" : "Saved to your account"; tone = busy ? "busy" : "ok"; }
+    if (s.textContent !== text) s.textContent = text;
+    s.setAttribute("data-tone", tone);
+  }
+
+  /* ---------- editing + saving ---------- */
+  function setField(i, f, val){
+    var k = keyOf(monday);
+    var w = getWeek(k, true);
+    if (w.days[i][f] === val) return;
+    w.days[i][f] = val;
+    dirty.set(k + "|" + i + "|" + f, ++ver);
+    problem = null;
+    paintTotals();
+    paintStamp();
+    scheduleSave(k);
+  }
+
+  function scheduleSave(k){
+    if (mode === "readonly") return;
+    if (timers[k]) clearTimeout(timers[k]);
+    timers[k] = setTimeout(function (){ delete timers[k]; save(k); setStatus(); }, mode === "account" ? 700 : 250);
+    setStatus();
+  }
+
+  function clearDirtyFor(k, snap){
+    dirty.forEach(function (v, key){
+      if (key.indexOf(k + "|") !== 0) return;
+      if (!snap || snap.get(key) === v) dirty.delete(key);
+    });
+  }
+
+  function save(k){
+    if (mode === "local" || mode === "memory"){ persistLocal(); clearDirtyFor(k, null); return; }
+    if (mode !== "account" || !ready || !col || !weeks[k]) return;
+    var snap = new Map();
+    dirty.forEach(function (v, key){ if (key.indexOf(k + "|") === 0) snap.set(key, v); });
+    var body = {
+      days: weeks[k].days.map(function (d){ return { v: d.v.trim(), d: d.d, x: d.x }; }),
+      updated: new Date().toISOString()
+    };
+    inflight++;
+    setStatus();
+    chains[k] = (chains[k] || Promise.resolve()).then(function (){
+      return writeDoc(k, body, 1);
+    }).then(function (){
+      clearDirtyFor(k, snap);
+      inflight--;
+      setStatus();
+    }, function (e){
+      inflight--;
+      onWriteError(e);
+      setStatus();
+    });
+  }
+
+  function writeDoc(k, body, retries){
+    return col.doc(k).set(body).catch(function (e){
+      if (e && e.code === "unavailable" && retries > 0){
+        return new Promise(function (res){ setTimeout(res, 600 + Math.random() * 900); })
+          .then(function (){ return writeDoc(k, body, retries - 1); });
+      }
+      throw e;
+    });
+  }
+
+  function onWriteError(e){
+    var code = e && e.code;
+    if (code === "invalid_argument"){ setReadonly(); return; }
+    if (code === "quota_exceeded"){ problem = "Your log is full, so new entries aren't being saved"; return; }
+    if (code === "revoked" || code === "not_granted" || code === "capability_disabled" || code === "capability_removed"){
+      switchToLocal(); return;
+    }
+    problem = "Couldn't save your last change. Edit the entry again to retry";
+  }
+
+  function setReadonly(){
+    mode = "readonly";
+    $("rowsField").disabled = true;
+    rows.forEach(function (r){ r.val.setAttribute("aria-readonly", "true"); });
+    refreshValues();
+  }
+
+  /* ---------- storage: browser fallback ---------- */
+  function lsRead(){
+    try { var raw = window.localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; }
+    catch (e){ return undefined; }
+  }
+  function persistLocal(){
+    var out = {};
+    Object.keys(weeks).forEach(function (k){ if (parseKey(k) && !isEmptyWeek(weeks[k])) out[k] = weeks[k]; });
+    try { window.localStorage.setItem(LS_KEY, JSON.stringify(out)); if (mode === "memory") mode = "local"; }
+    catch (e){ mode = "memory"; }
+  }
+  function startLocal(){
+    col = null;
+    var data = lsRead();
+    mode = data === undefined ? "memory" : "local";
+    if (data && typeof data === "object"){
+      Object.keys(data).forEach(function (k){ if (parseKey(k)) applyIncoming(k, data[k]); });
+    }
+    if (dirty.size) persistLocal();
+    dirty.clear();
+    refreshValues();
+    updateVenueList();
+    setStatus();
+  }
+  function switchToLocal(){
+    col = null;
+    if (unsub){ try { unsub(); } catch (e){} unsub = null; }
+    mode = "local";
+    persistLocal();
+    dirty.clear();
+    problem = mode === "local" ? "Saving to your account stopped. Entries are kept in this browser" : null;
+  }
+
+  /* ---------- storage: your account ---------- */
+  var unsub = null;
+  function waitForClaude(ms){
+    return new Promise(function (res){
+      var t0 = Date.now();
+      (function poll(){
+        var c = window.claude;
+        if (c && typeof c.use === "function") return res(c);
+        if (Date.now() - t0 > ms) return res(null);
+        setTimeout(poll, 100);
+      })();
+    });
+  }
+
+  function connect(){
+    waitForClaude(2000).then(function (c){
+      if (!c) return startLocal();
+      return Promise.all([
+        c.use("db").catch(function (){ return null; }),
+        c.use("user").catch(function (){ return null; })
+      ]).then(function (res){
+        var db = res[0], user = res[1];
+        if (!db || !user) return startLocal();
+        return Promise.resolve(user.id()).catch(function (){ return null; }).then(function (uid){
+          if (!uid) return startLocal();
+          try { col = db.collection("data/users/" + uid); }
+          catch (e){ return startLocal(); }
+          mode = "account";
+          subscribe();
+          setStatus();
+        });
+      });
+    }).catch(function (){ startLocal(); });
+  }
+
+  function subscribe(){
+    var timer = setTimeout(function (){ if (!ready){ unreachable = true; setStatus(); } }, 10000);
+    unsub = col.onSnapshot(function (snap){
+      snap.docChanges().forEach(function (ch){
+        var id = ch.doc.id;
+        if (!parseKey(id)) return;
+        applyIncoming(id, ch.type === "removed" ? null : ch.doc.data());
+      });
+      if (!snap.metadata.fromCache && !ready){
+        ready = true;
+        unreachable = false;
+        clearTimeout(timer);
+        dirtyKeys().forEach(function (k){ save(k); });
+      }
+      refreshValues();
+      updateVenueList();
+      setStatus();
+    }, function (e){
+      clearTimeout(timer);
+      var code = e && e.code;
+      if (code === "invalid_argument" || code === "resource_exhausted"){
+        problem = "Couldn't load your saved log. Reload the page to try again";
+        setStatus();
+        return;
+      }
+      switchToLocal();
+      refreshValues();
+      setStatus();
+    });
+  }
+
+  /* ---------- navigation ---------- */
+  function go(deltaWeeks){
+    monday = addDays(monday, 7 * deltaWeeks);
+    renderWeek(true);
+  }
+  $("prevBtn").addEventListener("click", function (){ go(-1); });
+  $("nextBtn").addEventListener("click", function (){ go(1); });
+  $("todayBtn").addEventListener("click", function (){
+    monday = mondayOf(new Date());
+    renderWeek(true);
+    $("prevBtn").focus();
+  });
+  document.addEventListener("keydown", function (e){
+    var t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.getAttribute("role") === "spinbutton")) return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === "ArrowLeft"){ go(-1); e.preventDefault(); }
+    else if (e.key === "ArrowRight"){ go(1); e.preventDefault(); }
+  });
+
+  /* ---------- start ---------- */
+  buildRows();
+  renderWeek(false);
+  setInterval(tick, 30000);
+  setStatus();
+  connect();
+})();
+</script>
+</body>
+</html>
