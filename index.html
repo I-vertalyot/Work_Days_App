@@ -84,8 +84,9 @@ body{background:#1B1F22;font-family:var(--sans);color:var(--ink);-webkit-font-sm
   display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
   padding-bottom:18px;border-bottom:3px solid var(--ink);
 }
-.card-head h1{margin:0;font-size:72px;line-height:.86;font-weight:900;font-stretch:62%;letter-spacing:-.005em}
-.range{margin:12px 0 0;font-size:20px;font-weight:600;font-stretch:85%}
+.card-head h1{margin:0;font-size:20px;line-height:1;font-weight:700;font-stretch:85%}
+.r-short{display:none}
+.range{overflow-wrap:anywhere;margin:10px 0 0;font-size:72px;line-height:.9;font-weight:900;font-stretch:62%;letter-spacing:-.005em}
 .weekbox{display:flex;align-items:stretch;border:2px solid var(--ink);flex:none}
 .wb-label{
   display:flex;flex-direction:column;justify-content:space-between;
@@ -242,8 +243,10 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .card{padding:22px 16px 18px;clip-path:polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%)}
   .card-head{gap:12px;padding-bottom:14px}
   .card-head > div:first-child{min-width:0}
-  .card-head h1{font-size:52px}
-  .range{margin-top:9px;font-size:16px}
+  .card-head h1{font-size:16px}
+  .range{margin-top:8px;font-size:40px;line-height:.92}
+  .r-long{display:none}
+  .r-short{display:inline}
   .wb-label{padding:5px 8px;font-size:11px}
   .wb-num{padding:2px 10px 0;font-size:44px}
   .cols{display:none}
@@ -313,7 +316,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       <header class="card-head">
         <div>
           <h1 id="cardTitle">Time card</h1>
-          <p class="range" id="range"></p>
+          <p class="range"><span class="r-long" id="rangeLong"></span><span class="r-short" id="rangeShort"></span></p>
         </div>
         <div class="weekbox" aria-label="Week number">
           <div class="wb-label" aria-hidden="true"><span>Week</span><span>No.</span></div>
@@ -393,12 +396,13 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     var yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
     return Math.ceil(((t - yearStart) / 86400000 + 1) / 7);
   }
-  function rangeLabel(mon, sun){
+  function rangeLabel(mon, sun, short){
+    function mn(d){ var m = MONTHS[d.getMonth()]; return short ? m.slice(0, 3) : m; }
     if (mon.getFullYear() !== sun.getFullYear())
-      return mon.getDate() + " " + MONTHS[mon.getMonth()] + " " + mon.getFullYear() + " – " + sun.getDate() + " " + MONTHS[sun.getMonth()] + " " + sun.getFullYear();
+      return mon.getDate() + " " + mn(mon) + " " + mon.getFullYear() + " – " + sun.getDate() + " " + mn(sun) + " " + sun.getFullYear();
     if (mon.getMonth() !== sun.getMonth())
-      return mon.getDate() + " " + MONTHS[mon.getMonth()] + " – " + sun.getDate() + " " + MONTHS[sun.getMonth()] + " " + sun.getFullYear();
-    return mon.getDate() + "–" + sun.getDate() + " " + MONTHS[sun.getMonth()] + " " + sun.getFullYear();
+      return mon.getDate() + " " + mn(mon) + " – " + sun.getDate() + " " + mn(sun) + " " + sun.getFullYear();
+    return mon.getDate() + "–" + sun.getDate() + " " + mn(sun) + " " + sun.getFullYear();
   }
 
   /* ---------- numbers ---------- */
@@ -632,7 +636,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     var sunday = addDays(monday, 6);
     var today = atMidnight(new Date());
     $("weekNo").textContent = isoWeek(monday);
-    $("range").textContent = rangeLabel(monday, sunday);
+    $("rangeLong").textContent = rangeLabel(monday, sunday, false);
+    $("rangeShort").textContent = rangeLabel(monday, sunday, true);
     $("prevBtn").setAttribute("aria-label", "Previous week, week " + isoWeek(addDays(monday, -7)));
     $("nextBtn").setAttribute("aria-label", "Next week, week " + isoWeek(addDays(monday, 7)));
     $("todayBtn").hidden = +mondayOf(today) === +monday;
