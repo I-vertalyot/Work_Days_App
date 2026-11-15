@@ -10,6 +10,11 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@700;800;900&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playwrite+CZ:wght@300;400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap">
 <style>
 :root{
   --ink:#1D1B18;
@@ -23,6 +28,7 @@
   --sans:"Archivo",system-ui,sans-serif;
   --stencil:"Big Shoulders Stencil","Archivo",sans-serif;
   --hand:"Playwrite CZ","Segoe Script","Bradley Hand",cursive;
+  --hs:1;
   --cols:104px minmax(0,1fr) 164px 182px;
 }
 *{box-sizing:border-box}
@@ -124,7 +130,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .venue{
   width:100%;min-width:0;border:0;background:transparent;border-radius:0;
   padding:12px 0;
-  font:400 18px/1.4 var(--hand);color:var(--ink);
+  font:400 calc(18px * var(--hs))/1.4 var(--hand);color:var(--ink);
 }
 .venue::placeholder{color:rgba(29,27,24,.38);opacity:1}
 
@@ -224,6 +230,21 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .status[data-tone="warn"]::before{background:#E0533B}
 @keyframes pulse{50%{opacity:.3}}
 
+/* ---------- handwriting picker ---------- */
+.hand-pick{width:100%;max-width:1040px;border:0;margin:22px 0 0;padding:0;min-width:0}
+.hand-pick legend{padding:0;margin-bottom:10px;color:#E3D3AE;font:600 15px/1 var(--sans);font-stretch:85%}
+.chips{display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 230px)}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.chip span{
+  display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;
+  background:rgba(226,203,148,.1);color:#EADBB8;border:1.5px solid rgba(226,203,148,.32);
+  cursor:pointer;line-height:1;white-space:nowrap;transition:background-color .15s,border-color .15s;
+}
+.chip span:hover{border-color:rgba(226,203,148,.7)}
+.chip input:checked + span{background:#E8D4A3;color:#1D1B18;border-color:#E8D4A3}
+.chip input:focus-visible + span{outline:2px solid #F0E2BC;outline-offset:2px}
+
 /* ---------- focus ---------- */
 :focus{outline:none}
 :focus-visible{outline:2px solid var(--pen);outline-offset:3px;border-radius:4px}
@@ -260,7 +281,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .ddate{font-size:17px;letter-spacing:0}
   .today-ring{left:-8px;top:-3px;width:58px;height:42px}
   .venue-cell{grid-area:venue;padding:0;border-bottom:1px dashed rgba(29,27,24,.28)}
-  .venue{font-size:15px;padding:10px 0 8px}
+  .venue{font-size:calc(15px * var(--hs));padding:10px 0 8px}
   .days-cell{grid-area:days;padding:2px 0 0;gap:0}
   .ring{width:28px;height:28px}
   .ring[data-fill="0.5"] .punch{width:15.5px;height:30px}
@@ -281,6 +302,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .fine span:last-child{padding-right:0}
   .stamp{width:164px;height:164px;right:-6px;bottom:-128px}
   .status{margin-top:150px;font-size:14px}
+  .chips{max-width:none}
 }
 @media (max-width:360px){
 
@@ -358,6 +380,10 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   </div>
 
   <p class="status" id="status" role="status" data-tone="busy">Opening your log…</p>
+  <fieldset class="hand-pick">
+    <legend>Handwriting for venues</legend>
+    <div class="chips" id="handChips"></div>
+  </fieldset>
   <datalist id="venues"></datalist>
 </main>
 
@@ -627,6 +653,69 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   function paintHours(r, x){
     r.xminus.disabled = x <= 0;
     r.xplus.disabled = x >= MAX_HOURS;
+  }
+
+
+  /* ---------- handwriting ---------- */
+  var HANDS = [
+    { id: "cz",    name: "Czech school", fam: '"Playwrite CZ"',  hs: 1 },
+    { id: "quick", name: "Quick note",   fam: '"Caveat"',        hs: 1.32 },
+    { id: "neat",  name: "Neat print",   fam: '"Patrick Hand"',  hs: 1.14 },
+    { id: "note",  name: "Notebook",     fam: '"Kalam"',         hs: 1.04 },
+    { id: "round", name: "Rounded",      fam: '"Shantell Sans"', hs: 0.98 },
+    { id: "type",  name: "Typewriter",   fam: '"Courier Prime"', hs: 1.02 }
+  ];
+  var HAND_KEY = "workdays.hand";
+  var handId = "cz";
+  var handTouched = false;
+  var handChain = Promise.resolve();
+  function handById(id){ for (var i = 0; i < HANDS.length; i++) if (HANDS[i].id === id) return HANDS[i]; return null; }
+  function applyHand(id){
+    var h = handById(id);
+    if (!h) return;
+    handId = id;
+    var root = document.documentElement.style;
+    root.setProperty("--hand", h.fam + ', "Segoe Script", "Bradley Hand", cursive');
+    root.setProperty("--hs", String(h.hs));
+    var input = document.getElementById("hand-" + id);
+    if (input) input.checked = true;
+  }
+  function buildHandPicker(){
+    var box = $("handChips");
+    HANDS.forEach(function (h){
+      var lab = el("label", "chip");
+      var inp = el("input", null, { type: "radio", name: "hand", id: "hand-" + h.id, value: h.id });
+      var sp = el("span");
+      sp.textContent = h.name;
+      sp.style.fontFamily = h.fam + ', "Segoe Script", cursive';
+      sp.style.fontSize = Math.round(17 * h.hs) + "px";
+      lab.appendChild(inp); lab.appendChild(sp);
+      box.appendChild(lab);
+      inp.addEventListener("change", function (){
+        if (!inp.checked) return;
+        handTouched = true;
+        applyHand(h.id);
+        try { window.localStorage.setItem(HAND_KEY, h.id); } catch (e){}
+        saveHand();
+      });
+    });
+    var saved = null;
+    try { saved = window.localStorage.getItem(HAND_KEY); } catch (e){}
+    applyHand(handById(saved) ? saved : "cz");
+  }
+  function saveHand(){
+    if (mode !== "account" || !ready || !col) return;
+    var id = handId;
+    handChain = handChain.then(function (){
+      return col.doc("settings").set({ hand: id });
+    }).catch(function (){});
+  }
+  function onRemoteSettings(data){
+    if (!data || handTouched) return;
+    if (typeof data.hand === "string" && handById(data.hand) && data.hand !== handId){
+      applyHand(data.hand);
+      try { window.localStorage.setItem(HAND_KEY, data.hand); } catch (e){}
+    }
   }
 
   /* ---------- painting ---------- */
@@ -907,6 +996,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     unsub = col.onSnapshot(function (snap){
       snap.docChanges().forEach(function (ch){
         var id = ch.doc.id;
+        if (id === "settings"){ if (ch.type !== "removed") onRemoteSettings(ch.doc.data()); return; }
         if (!parseKey(id)) return;
         applyIncoming(id, ch.type === "removed" ? null : ch.doc.data());
       });
@@ -915,6 +1005,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
         unreachable = false;
         clearTimeout(timer);
         dirtyKeys().forEach(function (k){ save(k); });
+        if (handTouched) saveHand();
       }
       refreshValues();
       updateVenueList();
@@ -974,6 +1065,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
   /* ---------- start ---------- */
   buildRows();
+  buildHandPicker();
   renderWeek(false);
   setInterval(tick, 30000);
   setStatus();
