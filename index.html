@@ -23,7 +23,7 @@
   --sans:"Archivo",system-ui,sans-serif;
   --stencil:"Big Shoulders Stencil","Archivo",sans-serif;
   --hand:"Playwrite CZ","Segoe Script","Bradley Hand",cursive;
-  --cols:104px minmax(0,1fr) 200px 182px;
+  --cols:104px minmax(0,1fr) 164px 182px;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -361,7 +361,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   var DAY_LONG = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
   var DAY_SHORT = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  var MAX_DAYS = 3, STEP = 0.5, MAX_HOURS = 3, MAX_VENUE = 80;
+  var MAX_DAYS = 2, STEP = 0.5, MAX_HOURS = 3, MAX_VENUE = 80;
   var LS_KEY = "workdays.v1";
   var FIELDS = ["v","d","x"];
 
@@ -497,7 +497,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
       var dcell = el("div", "days-cell");
       var holes = [];
-      for (var h = 0; h < 3; h++){
+      for (var h = 0; h < MAX_DAYS; h++){
         var btn = el("button", "hole", { type: "button", tabindex: "-1" });
         var rg = el("span", "ring", { "data-fill": "0" });
         rg.appendChild(el("span", "punch"));

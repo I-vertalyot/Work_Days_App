@@ -5,7 +5,7 @@ A weekly log of where you worked, styled as an old factory time card.
 Each card is one week, Monday to Sunday, with the real dates. For every day you can write:
 
 - **Venue**: where you worked. Venues you've used before are suggested as you type.
-- **Days worked**: punch the three holes. One click punches half a hole (half a day), a second click punches the whole hole (a full day), up to 3 days per date. Typing a venue on an empty day sets it to 1 day.
+- **Days worked**: punch the two holes. One click punches half a hole (half a day), a second click punches the whole hole (a full day), up to 2 days per date. Typing a venue on an empty day sets it to 1 day.
 - **Extra hours**: whole hours from 0 to 3, entered in red. Use the − / + buttons or type the number.
 
 The card adds up the week, and the red stamp in the corner shows the total for the month.
