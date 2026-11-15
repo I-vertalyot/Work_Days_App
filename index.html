@@ -243,17 +243,17 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .wb-num{padding:2px 10px 0;font-size:44px}
   .cols{display:none}
   .row{
-    grid-template-columns:66px minmax(0,1fr) auto;
+    grid-template-columns:44px minmax(0,1fr) auto;
     grid-template-areas:"day venue venue" "days days extra";
-    column-gap:8px;min-height:0;padding:8px 0 4px;
+    column-gap:9px;min-height:0;padding:8px 0 4px;
   }
   .row > div + div{border-left:0}
   .day{grid-area:day;padding:0 0 0 2px;gap:1px}
-  .dname{font-size:13px}
-  .ddate{font-size:23px}
-  .today-ring{left:-10px;top:-4px;width:78px;height:54px}
+  .dname{font-size:12px}
+  .ddate{font-size:17px;letter-spacing:0}
+  .today-ring{left:-8px;top:-3px;width:58px;height:42px}
   .venue-cell{grid-area:venue;padding:0;border-bottom:1px dashed rgba(29,27,24,.28)}
-  .venue{font-size:17px;padding:10px 0 8px}
+  .venue{font-size:15px;padding:10px 0 8px}
   .days-cell{grid-area:days;padding:2px 0 0;gap:0}
   .ring{width:28px;height:28px}
   .ring[data-fill="0.5"] .punch{width:15.5px;height:30px}
@@ -278,8 +278,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 @media (max-width:360px){
   .tabs{padding-right:34px}
   .tab{padding:0 9px;font-size:14px}
-  .row{grid-template-columns:60px minmax(0,1fr) auto}
-  .ddate{font-size:21px}
+  .row{grid-template-columns:40px minmax(0,1fr) auto}
+  .ddate{font-size:16px}
   .hole{width:38px;height:44px}
   .ring{width:26px;height:26px}
   .ring[data-fill="0.5"] .punch{width:14.5px;height:28px}
@@ -492,7 +492,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       day.appendChild(name); day.appendChild(date); day.appendChild(ring);
 
       var vcell = el("div", "venue-cell");
-      var venue = el("input", "venue", { type: "text", list: "venues", placeholder: "Venue", maxlength: String(MAX_VENUE), autocomplete: "off", spellcheck: "false" });
+      var venue = el("input", "venue", { type: "text", list: "venues", maxlength: String(MAX_VENUE), autocomplete: "off", spellcheck: "false" });
       vcell.appendChild(venue);
 
       var dcell = el("div", "days-cell");
