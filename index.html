@@ -38,7 +38,7 @@
   --stencil:"Big Shoulders Stencil","Archivo",sans-serif;
   --hand:"Playwrite CZ","Segoe Script","Bradley Hand",cursive;
   --hs:1;
-  --cols:104px minmax(0,1fr) 164px 182px;
+  --cols:122px minmax(0,1fr) 164px 182px;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -138,7 +138,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .row.weekend{background:rgba(168,38,20,.05)}
 .row > div + div{border-left:1px solid var(--rule)}
 .row > .venue-cell{border-left:0}
-.row{background-image:linear-gradient(var(--rule),var(--rule));background-size:1px 100%;background-position:104px 0;background-repeat:no-repeat}
+.row{background-image:linear-gradient(var(--rule),var(--rule));background-size:1px 100%;background-position:122px 0;background-repeat:no-repeat}
 
 .day{position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;padding:8px 0 12px 2px;align-self:last baseline}
 .dname{font-size:14px;font-weight:700;font-stretch:75%}
@@ -339,6 +339,27 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .status[data-tone="busy"]::before{animation:none}
 }
 
+
+/* ---------- one shared line per row (computer layout) ---------- */
+@media (min-width:721px){
+  .row{
+    align-items:center;
+    background-image:linear-gradient(var(--rule),var(--rule)),linear-gradient(var(--rule),var(--rule)),linear-gradient(var(--rule),var(--rule));
+    background-size:1px 100%,1px 100%,1px 100%;
+    background-position:122px 0,calc(100% - 346px) 0,calc(100% - 182px) 0;
+  }
+  .row > div + div{border-left:0}
+  .row > .day,.row > .venue-cell{align-self:center}
+  .day{flex-direction:row;align-items:baseline;justify-content:flex-start;gap:9px;padding:0 0 0 2px}
+  .dname{font-size:15px;min-width:30px}
+  .ddate,.dval{line-height:1}
+  .venue-cell{align-items:center}
+  .vwrap{align-items:center;transform:translateY(var(--vshift, 0px))}
+  .venue{padding:6px 0 !important}
+  .hl{padding:6px 5px !important}
+  .xh{line-height:1;padding:3.5px 2px 2px}
+  .today-ring{top:50%;left:30px;transform:translateY(-50%);width:84px;height:54px}
+}
 /* ---------- phone ---------- */
 @media (max-width:720px){
   .desk{padding:calc(10px + env(safe-area-inset-top)) 12px 48px}
@@ -799,6 +820,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     var root = document.documentElement.style;
     root.setProperty("--hand", h.fam + ', "Segoe Script", "Bradley Hand", cursive');
     root.setProperty("--hs", String(h.hs));
+    if (typeof alignVenues === "function") setTimeout(alignVenues, 0);
     var input = document.getElementById("hand-" + id);
     if (input) input.checked = true;
   }
@@ -1056,6 +1078,28 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
             })
       .then(function (){ btn.disabled = false; });
   }
+
+
+  /* ---------- line the venue text up with the date numbers ---------- */
+  var measureCtx = document.createElement("canvas").getContext("2d");
+  function baselineFromCenter(el){
+    var cs = getComputedStyle(el);
+    measureCtx.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    var m = measureCtx.measureText("Hg");
+    if (m.fontBoundingBoxAscent == null) return null;
+    return (m.fontBoundingBoxAscent - m.fontBoundingBoxDescent) / 2;
+  }
+  function alignVenues(){
+    if (!rows.length) return;
+    var d = baselineFromCenter(rows[0].date), v = baselineFromCenter(rows[0].venue);
+    var shift = d === null || v === null ? 0 : Math.round((d - v) * 2) / 2;
+    document.documentElement.style.setProperty("--vshift", shift + "px");
+  }
+  if (document.fonts){
+    document.fonts.ready.then(alignVenues);
+    document.fonts.addEventListener && document.fonts.addEventListener("loadingdone", alignVenues);
+  }
+  window.addEventListener("resize", alignVenues);
 
   /* ---------- painting ---------- */
   function renderWeek(animate){
@@ -1480,6 +1524,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   /* ---------- start ---------- */
   buildRows();
   buildHandPicker();
+  alignVenues();
   $("exportBtn").addEventListener("click", exportMonth);
   renderWeek(false);
   setInterval(tick, 30000);
