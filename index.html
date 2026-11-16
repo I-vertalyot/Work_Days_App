@@ -154,6 +154,15 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   font:700 calc(22px * var(--hs))/1.35 var(--hand);color:var(--ink);
 }
 .venue-cell{position:relative}
+.vwrap{position:relative;flex:1 1 auto;min-width:0;display:flex;align-items:last baseline}
+.vwrap .venue{position:relative;z-index:1}
+.hl{
+  position:absolute;left:-5px;top:0;z-index:0;max-width:calc(100% + 10px);
+  padding:6px 5px 2px;box-sizing:border-box;overflow:hidden;white-space:pre;pointer-events:none;
+  font:700 calc(22px * var(--hs))/1.2 var(--hand);color:transparent;
+  background:linear-gradient(100deg, rgba(255,224,60,0) 0, rgba(255,224,60,.78) 5px, rgba(255,216,40,.72) calc(100% - 5px), rgba(255,224,60,0) 100%) 0 78%/100% 58% no-repeat;
+}
+.hl:empty{display:none}
 .suggest{
   position:absolute;left:12px;top:calc(100% - 6px);z-index:25;min-width:220px;max-width:calc(100% - 24px);
   margin:0;padding:6px;list-style:none;
@@ -360,6 +369,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .suggest{left:0;max-width:100%}
   .venue-cell{grid-area:venue;align-self:last baseline;padding:0 0 1px;border-bottom:1px dashed rgba(29,27,24,.28)}
   .venue{font-size:calc(19px * var(--hs));padding:4px 0 0}
+  .hl{font-size:calc(19px * var(--hs));padding:4px 5px 0}
   .days-cell{grid-area:days;padding:2px 0 0;gap:0}
   .ring{width:28px;height:28px}
   .ring[data-fill="0.5"] .punch{width:15.5px;height:30px}
@@ -611,7 +621,10 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
       var vcell = el("div", "venue-cell");
       var venue = el("input", "venue", { type: "text", maxlength: String(MAX_VENUE), autocomplete: "off", spellcheck: "false" });
-      vcell.appendChild(venue);
+      var vwrap = el("div", "vwrap");
+      var hl = el("span", "hl", { "aria-hidden": "true" });
+      vwrap.appendChild(hl); vwrap.appendChild(venue);
+      vcell.appendChild(vwrap);
 
       var dcell = el("div", "days-cell");
       var holes = [];
@@ -643,10 +656,11 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       li.appendChild(day); li.appendChild(vcell); li.appendChild(dcell); li.appendChild(xcell);
       rowsEl.appendChild(li);
 
-      var r = { li: li, name: name, date: date, venue: venue, holes: holes, val: val, xh: xh, xcell: xcell, xminus: xminus, xplus: xplus };
+      var r = { li: li, name: name, date: date, venue: venue, hl: hl, holes: holes, val: val, xh: xh, xcell: xcell, xminus: xminus, xplus: xplus };
       rows.push(r);
 
       venue.addEventListener("input", function (){
+        hl.textContent = venue.value.trim() ? venue.value : "";
         if (mode === "readonly") return;
         var w = getWeek(keyOf(monday), true);
         var had = w.days[i].v.trim() !== "";
@@ -939,7 +953,12 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       font("700 21px " + SANS, "condensed"); c.fillText(DAY_SHORT[r.i], xDay, base);
       if (r.v){
         font("700 " + Math.round(25 * h.hs) + "px " + HAND);
-        c.fillText(fitText(c, r.v, xDays - 110 - xVenue), xVenue, base);
+        var vt = fitText(c, r.v, xDays - 110 - xVenue);
+        var vw = c.measureText(vt).width;
+        c.fillStyle = "rgba(255,220,50,.62)";
+        c.fillRect(xVenue - 6, base - rowH * 0.42, vw + 12, rowH * 0.5);
+        c.fillStyle = INK;
+        c.fillText(vt, xVenue, base);
       }
       c.textAlign = "right";
       if (r.d){ font("800 27px " + STEN); c.fillStyle = INK; c.fillText(fmtNum(r.d), xDays, base); }
@@ -1068,6 +1087,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     rows.forEach(function (r, i){
       var day = w.days[i];
       if (document.activeElement !== r.venue && r.venue.value !== day.v) r.venue.value = day.v;
+      var hv = r.venue.value.trim() ? r.venue.value : "";
+      if (r.hl.textContent !== hv) r.hl.textContent = hv;
       paintDays(r, day.d);
       paintHours(r, day.x);
       if (document.activeElement !== r.xh){
