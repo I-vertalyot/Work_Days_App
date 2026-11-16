@@ -19,11 +19,11 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@700;800;900&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playwrite+CZ:wght@300;400&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap">
 <style>
 :root{
   --ink:#1D1B18;
@@ -164,8 +164,22 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .venue{
   width:100%;min-width:0;border:0;background:transparent;border-radius:0;
   padding:12px 0;
-  font:400 calc(18px * var(--hs))/1.4 var(--hand);color:var(--ink);
+  font:700 calc(22px * var(--hs))/1.35 var(--hand);color:var(--ink);
 }
+.venue-cell{position:relative}
+.suggest{
+  position:absolute;left:12px;top:calc(100% - 6px);z-index:25;min-width:220px;max-width:calc(100% - 24px);
+  margin:0;padding:6px;list-style:none;
+  background:#F3E6C2;border:1.5px solid var(--ink);border-radius:10px;
+  box-shadow:0 12px 24px rgba(29,27,24,.28);
+}
+.suggest[hidden]{display:none}
+.suggest li{
+  padding:8px 12px;border-radius:7px;cursor:pointer;
+  font:700 calc(19px * var(--hs))/1.3 var(--hand);color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.suggest li:hover,.suggest li.active{background:rgba(29,27,24,.1)}
 .venue::placeholder{color:rgba(29,27,24,.38);opacity:1}
 
 .days-cell{display:flex;align-items:center;gap:2px;padding:0 8px 0 10px}
@@ -344,8 +358,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .dname{font-size:12px}
   .ddate{font-size:17px;letter-spacing:0}
   .today-ring{left:-8px;top:-3px;width:58px;height:42px}
+  .suggest{left:0;max-width:100%}
   .venue-cell{grid-area:venue;padding:0;border-bottom:1px dashed rgba(29,27,24,.28)}
-  .venue{font-size:calc(15px * var(--hs));padding:10px 0 8px}
+  .venue{font-size:calc(19px * var(--hs));padding:9px 0 7px}
   .days-cell{grid-area:days;padding:2px 0 0;gap:0}
   .ring{width:28px;height:28px}
   .ring[data-fill="0.5"] .punch{width:15.5px;height:30px}
@@ -453,7 +468,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   </button>
   <p class="status" id="status" role="status" data-tone="busy">Opening your log…</p>
 
-  <datalist id="venues"></datalist>
 </main>
 
 <script>
@@ -594,7 +608,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       day.appendChild(name); day.appendChild(date); day.appendChild(ring);
 
       var vcell = el("div", "venue-cell");
-      var venue = el("input", "venue", { type: "text", list: "venues", maxlength: String(MAX_VENUE), autocomplete: "off", spellcheck: "false" });
+      var venue = el("input", "venue", { type: "text", maxlength: String(MAX_VENUE), autocomplete: "off", spellcheck: "false" });
       vcell.appendChild(venue);
 
       var dcell = el("div", "days-cell");
@@ -636,6 +650,20 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
         var had = w.days[i].v.trim() !== "";
         setField(i, "v", venue.value.slice(0, MAX_VENUE));
         if (!had && venue.value.trim() && w.days[i].d === 0){ setField(i, "d", 1); paintDays(r, 1); }
+        if (document.activeElement === venue) showSuggest(r);
+      });
+      venue.setAttribute("role", "combobox");
+      venue.setAttribute("aria-autocomplete", "list");
+      venue.setAttribute("aria-controls", "venueSuggest");
+      venue.setAttribute("aria-expanded", "false");
+      venue.addEventListener("focus", function (){ showSuggest(r); });
+      venue.addEventListener("click", function (){ if (sugEl.hidden) showSuggest(r); });
+      venue.addEventListener("blur", function (){ setTimeout(function (){ if (sugFor === r && document.activeElement !== venue) hideSuggest(); }, 0); });
+      venue.addEventListener("keydown", function (e){
+        if (e.key === "ArrowDown"){ if (moveSuggest(1)) e.preventDefault(); }
+        else if (e.key === "ArrowUp"){ if (moveSuggest(-1)) e.preventDefault(); }
+        else if (e.key === "Enter"){ if (!sugEl.hidden && sugActive >= 0){ e.preventDefault(); pickSuggest(sugActive); } }
+        else if (e.key === "Escape"){ if (!sugEl.hidden){ e.preventDefault(); hideSuggest(); } }
       });
       venue.addEventListener("change", function (){
         var t = venue.value.trim();
@@ -876,22 +904,66 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     $("stamp").setAttribute("aria-label", MONTHS[m] + " " + y + ": " + fmtNum(d) + " " + daysWord(d) + " worked, " + fmtNum(x) + " extra " + (x === 1 ? "hour" : "hours"));
   }
 
-  var lastVenues = "";
+  /* ---------- venue suggestions: the two most recent venues ---------- */
+  var recentVenues = [];
   function updateVenueList(){
-    var count = {};
+    var latest = {};
     Object.keys(weeks).forEach(function (k){
-      weeks[k].days.forEach(function (d){
+      var mon = parseKey(k);
+      if (!mon) return;
+      weeks[k].days.forEach(function (d, i){
         var v = d.v.trim();
-        if (v) count[v] = (count[v] || 0) + 1;
+        if (!v) return;
+        var t = addDays(mon, i).getTime();
+        if (!(v in latest) || t > latest[v]) latest[v] = t;
       });
     });
-    var list = Object.keys(count).sort(function (a, b){ return count[b] - count[a] || a.localeCompare(b); }).slice(0, 40);
-    var sig = list.join("\n");
-    if (sig === lastVenues) return;
-    lastVenues = sig;
-    var dl = $("venues");
-    dl.innerHTML = "";
-    list.forEach(function (v){ var o = document.createElement("option"); o.value = v; dl.appendChild(o); });
+    recentVenues = Object.keys(latest).sort(function (a, b){ return latest[b] - latest[a]; });
+  }
+  var sugEl = el("ul", "suggest", { role: "listbox", id: "venueSuggest" });
+  sugEl.hidden = true;
+  var sugFor = null, sugItems = [], sugActive = -1;
+  function suggestionsFor(text){
+    var q = text.trim().toLowerCase();
+    var list = recentVenues.filter(function (v){
+      var l = v.toLowerCase();
+      return l !== q && (!q || l.indexOf(q) !== -1);
+    });
+    return list.slice(0, 2);
+  }
+  function showSuggest(r){
+    sugItems = suggestionsFor(r.venue.value);
+    if (!sugItems.length || mode === "readonly"){ hideSuggest(); return; }
+    sugFor = r; sugActive = -1;
+    sugEl.innerHTML = "";
+    sugItems.forEach(function (v, n){
+      var li = el("li", null, { role: "option", id: "sug-" + n });
+      li.textContent = v;
+      li.addEventListener("mousedown", function (e){ e.preventDefault(); pickSuggest(n); });
+      sugEl.appendChild(li);
+    });
+    if (sugEl.parentNode !== r.venue.parentNode) r.venue.parentNode.appendChild(sugEl);
+    sugEl.hidden = false;
+    r.venue.setAttribute("aria-expanded", "true");
+  }
+  function hideSuggest(){
+    if (sugFor) sugFor.venue.setAttribute("aria-expanded", "false");
+    sugEl.hidden = true; sugFor = null; sugActive = -1;
+  }
+  function moveSuggest(dir){
+    if (sugEl.hidden || !sugItems.length) return false;
+    sugActive = (sugActive + dir + sugItems.length) % sugItems.length;
+    Array.prototype.forEach.call(sugEl.children, function (li, n){ li.classList.toggle("active", n === sugActive); });
+    sugFor.venue.setAttribute("aria-activedescendant", "sug-" + sugActive);
+    return true;
+  }
+  function pickSuggest(n){
+    var r = sugFor;
+    if (!r) return;
+    r.venue.value = sugItems[n];
+    r.venue.dispatchEvent(new Event("input"));
+    r.venue.dispatchEvent(new Event("change"));
+    hideSuggest();
   }
 
   function swap(dir){
