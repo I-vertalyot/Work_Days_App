@@ -652,6 +652,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
         if (!had && venue.value.trim() && w.days[i].d === 0){ setField(i, "d", 1); paintDays(r, 1); }
         if (document.activeElement === venue) showSuggest(r);
       });
+      venue.setAttribute("enterkeyhint", i < 6 ? "next" : "done");
       venue.setAttribute("role", "combobox");
       venue.setAttribute("aria-autocomplete", "list");
       venue.setAttribute("aria-controls", "venueSuggest");
@@ -662,7 +663,15 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       venue.addEventListener("keydown", function (e){
         if (e.key === "ArrowDown"){ if (moveSuggest(1)) e.preventDefault(); }
         else if (e.key === "ArrowUp"){ if (moveSuggest(-1)) e.preventDefault(); }
-        else if (e.key === "Enter"){ if (!sugEl.hidden && sugActive >= 0){ e.preventDefault(); pickSuggest(sugActive); } }
+        else if (e.key === "Enter"){
+          if (e.isComposing) return;
+          e.preventDefault();
+          if (!sugEl.hidden && sugActive >= 0) pickSuggest(sugActive);
+          else venue.dispatchEvent(new Event("change"));
+          hideSuggest();
+          if (i < 6) rows[i + 1].venue.focus();
+          else venue.blur();
+        }
         else if (e.key === "Escape"){ if (!sugEl.hidden){ e.preventDefault(); hideSuggest(); } }
       });
       venue.addEventListener("change", function (){
