@@ -263,6 +263,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .status[data-tone="warn"]{color:#F0A08F}
 .status[data-tone="warn"]::before{background:#E0533B}
 @keyframes pulse{50%{opacity:.3}}
+.status:not([data-tone="warn"]){position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.more-row{margin-top:30px}
+.status[data-tone="warn"] + .more-row{margin-top:0}
 
 /* ---------- handwriting picker ---------- */
 .more-btn{
@@ -356,6 +359,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .fine span:last-child{padding-right:0}
   .stamp{width:104px;height:104px;right:-4px;bottom:-78px}
   .status{margin-top:96px;font-size:14px}
+  .more-row{margin-top:26px}
   .chips{max-width:none}
 }
 @media (max-width:360px){
