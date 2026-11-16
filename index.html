@@ -265,7 +265,20 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 @keyframes pulse{50%{opacity:.3}}
 
 /* ---------- handwriting picker ---------- */
-.hand-pick{width:100%;max-width:1040px;border:0;margin:22px 0 0;padding:0;min-width:0}
+.more-btn{
+  appearance:none;display:grid;place-items:center;
+  width:48px;height:48px;margin-top:14px;padding:0;cursor:pointer;
+  border-radius:50%;border:1.5px solid rgba(226,203,148,.32);background:transparent;
+  transition:background-color .15s,border-color .15s;
+}
+.more-row{width:100%;max-width:1040px}
+.more-btn svg{width:22px;height:22px;fill:#E2CB94}
+.more-btn:hover{border-color:rgba(226,203,148,.7);background:rgba(226,203,148,.08)}
+.more-btn[aria-expanded="true"]{background:#E8D4A3;border-color:#E8D4A3}
+.more-btn[aria-expanded="true"] svg{fill:#1D1B18}
+.more-btn:focus-visible{outline:2px solid #F0E2BC;outline-offset:3px;border-radius:50%}
+.hand-pick[hidden]{display:none}
+.hand-pick{width:100%;max-width:1040px;border:0;margin:14px 0 0;padding:0;min-width:0}
 .hand-pick legend{padding:0;margin-bottom:10px;color:#E3D3AE;font:600 15px/1 var(--sans);font-stretch:85%}
 .chips{display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 230px)}
 .chip{position:relative}
@@ -417,7 +430,10 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
   <p class="status" id="status" role="status" data-tone="busy">Opening your log…</p>
-  <fieldset class="hand-pick">
+  <div class="more-row"><button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="handPick" aria-label="Handwriting options" title="Handwriting options">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>
+  </button></div>
+  <fieldset class="hand-pick" id="handPick" hidden>
     <legend>Handwriting for venues</legend>
     <div class="chips" id="handChips"></div>
   </fieldset>
@@ -717,7 +733,15 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     var input = document.getElementById("hand-" + id);
     if (input) input.checked = true;
   }
+  function setMore(open){
+    $("handPick").hidden = !open;
+    $("moreBtn").setAttribute("aria-expanded", open ? "true" : "false");
+  }
   function buildHandPicker(){
+    $("moreBtn").addEventListener("click", function (){ setMore($("handPick").hidden); });
+    document.addEventListener("keydown", function (e){
+      if (e.key === "Escape" && !$("handPick").hidden){ setMore(false); $("moreBtn").focus(); }
+    });
     var box = $("handChips");
     HANDS.forEach(function (h){
       var lab = el("label", "chip");

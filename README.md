@@ -8,7 +8,7 @@ Each card is one week, Monday to Sunday, with the real dates. For every day you 
 - **Days worked**: punch the two holes. One click punches half a hole (half a day), a second click punches the whole hole (a full day), up to 2 days per date. Typing a venue on an empty day sets it to 1 day.
 - **Extra hours**: whole hours from 0 to 3, entered in red. Use the − / + buttons or type the number.
 
-Under the card you can pick the handwriting used for venues: Czech school, Quick note, Neat print, Notebook, Rounded or Typewriter.
+Under the card, the ⋯ button opens the handwriting choice for venues: Czech school, Quick note, Neat print, Notebook, Rounded or Typewriter.
 
 The card adds up the week, and the red stamp in the corner shows the total for the month.
 
