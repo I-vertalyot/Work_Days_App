@@ -1,5 +1,5 @@
 // Keeps Work days working offline once it has been opened.
-const CACHE = "workdays-v22";
+const CACHE = "workdays-v23";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon-32.png"];
 
 self.addEventListener("install", (e) => {
@@ -29,7 +29,7 @@ self.addEventListener("fetch", (e) => {
   // The page itself: try the network first so updates arrive, fall back to the saved copy offline.
   if (req.mode === "navigate") {
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: "no-cache" })
         .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put("./index.html", copy)); return res; })
         .catch(() => caches.match("./index.html"))
     );

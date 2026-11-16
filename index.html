@@ -1245,8 +1245,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     var e = $("syncMsg"); e.textContent = text || ""; e.classList.toggle("warn", !!warn);
   }
   function paintSync(){
-    $("syncBox").hidden = !syncStarted;
-    if (!syncStarted) return;
+    $("syncBox").hidden = inClaudeFrame;
+    if (inClaudeFrame) return;
+    ["syncSignIn", "syncCreate"].forEach(function (id){ $(id).disabled = !syncStarted; });
     $("syncOut").hidden = !!session;
     $("syncIn").hidden = !session;
     if (session) $("syncWho").textContent = session.email || "your account";
@@ -1381,10 +1382,12 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
   function startSync(){
     if (inClaudeFrame) return;
+    paintSync();
     session = lsGet(SESSION_KEY);
     if (session) restoreSyncCache();
     loadScript(CONVEX_LIB).then(function (){
       var lib = window.convex;
+      if (!lib || !lib.ConvexClient || !lib.ConvexHttpClient) throw new Error("Convex library missing");
       cx = new lib.ConvexClient(CONVEX_URL);
       cxHttp = new lib.ConvexHttpClient(CONVEX_URL);
       cxApi = lib.anyApi;
@@ -1393,6 +1396,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       if (session) startAuth();
     }).catch(function (){
       syncStarted = false; paintSync();
+      syncMsg("Couldn't reach the sync service. Check your connection and reopen the app.", true);
     });
   }
 
