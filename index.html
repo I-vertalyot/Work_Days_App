@@ -276,36 +276,27 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .status:not([data-tone="warn"]){position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 
-/* ---------- swipe hint ---------- */
+/* ---------- swipe hint: three chevrons rippling in the swipe direction ---------- */
 .swipe-hint{
   position:fixed;left:50%;top:50%;z-index:40;pointer-events:none;
-  display:flex;align-items:center;gap:8px;
-  padding:10px 18px 10px 12px;border-radius:999px;
-  background:rgba(27,31,34,.94);color:#F1E2BA;
-  box-shadow:0 10px 30px rgba(0,0,0,.4);
-  font:800 18px/1 var(--sans);font-stretch:80%;
-  opacity:0;transform:translate(-50%,-50%);
+  display:flex;align-items:center;
+  transform:translate(-50%,-50%);
+  filter:drop-shadow(0 0 5px rgba(241,226,186,.95)) drop-shadow(0 0 1px rgba(241,226,186,1));
 }
-.swipe-hint .sh-arrow{width:26px;height:26px}
-.swipe-hint[data-dir="right"]{flex-direction:row-reverse;padding:10px 12px 10px 18px}
-.swipe-hint[data-dir="right"] .sh-arrow{transform:scaleX(-1)}
-.swipe-hint.play[data-dir="left"]{animation:hintLeft .65s ease-out forwards}
-.swipe-hint.play[data-dir="right"]{animation:hintRight .65s ease-out forwards}
-@keyframes hintLeft{
-  0%{opacity:0;transform:translate(calc(-50% + 30px),-50%) scale(.9)}
-  25%{opacity:1;transform:translate(-50%,-50%) scale(1)}
-  70%{opacity:1;transform:translate(calc(-50% - 18px),-50%)}
-  100%{opacity:0;transform:translate(calc(-50% - 60px),-50%)}
-}
-@keyframes hintRight{
-  0%{opacity:0;transform:translate(calc(-50% - 30px),-50%) scale(.9)}
-  25%{opacity:1;transform:translate(-50%,-50%) scale(1)}
-  70%{opacity:1;transform:translate(calc(-50% + 18px),-50%)}
-  100%{opacity:0;transform:translate(calc(-50% + 60px),-50%)}
+.swipe-hint[data-dir="right"]{transform:translate(-50%,-50%) scaleX(-1)}
+.swipe-hint .sh-c{width:46px;height:46px;margin:0 -12px;opacity:0}
+.swipe-hint.play .sh-c{animation:chev .52s cubic-bezier(.2,.7,.3,1) both}
+.swipe-hint.play .sh-c:nth-child(3){animation-delay:0ms}
+.swipe-hint.play .sh-c:nth-child(2){animation-delay:85ms}
+.swipe-hint.play .sh-c:nth-child(1){animation-delay:170ms}
+@keyframes chev{
+  0%{opacity:0;transform:translateX(14px)}
+  35%{opacity:.9;transform:translateX(0)}
+  100%{opacity:0;transform:translateX(-16px)}
 }
 @media (prefers-reduced-motion:reduce){
-  .swipe-hint.play[data-dir]{animation:hintFade .7s linear forwards}
-  @keyframes hintFade{0%,70%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-50%)}}
+  .swipe-hint.play .sh-c{animation:chevFade .6s linear both;animation-delay:0ms}
+  @keyframes chevFade{0%{opacity:0}30%,60%{opacity:.85}100%{opacity:0}}
 }
 
 /* ---------- handwriting picker ---------- */
@@ -461,10 +452,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 </head>
 <body>
 <main class="desk">
-  <div class="swipe-hint" id="swipeHint" aria-hidden="true">
-    <svg class="sh-arrow" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="#F1E2BA" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <span class="sh-week"></span>
-  </div>
+  <div class="swipe-hint" id="swipeHint" aria-hidden="true"><svg class="sh-c" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#1D1B18" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="sh-c" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#1D1B18" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="sh-c" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#1D1B18" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
   <div class="topbar">
     <div class="menu">
   <button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="handPick" aria-label="Menu" title="Menu">
@@ -1557,13 +1545,12 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   /* short arrow badge showing which way the week was turned */
   var hintEl = $("swipeHint"), hintTimer = 0;
   function showSwipeHint(dir){
-    hintEl.querySelector(".sh-week").textContent = "Week " + isoWeek(monday);
     hintEl.setAttribute("data-dir", dir);
     hintEl.classList.remove("play");
     void hintEl.offsetWidth;
     hintEl.classList.add("play");
     clearTimeout(hintTimer);
-    hintTimer = setTimeout(function (){ hintEl.classList.remove("play"); }, 700);
+    hintTimer = setTimeout(function (){ hintEl.classList.remove("play"); }, 800);
   }
 
   /* swipe left / right on the card to change week */
