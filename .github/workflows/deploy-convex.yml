@@ -1,0 +1,47 @@
+name: Deploy Convex
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "convex/**"
+      - "package.json"
+      - ".github/workflows/deploy-convex.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check the deploy key is set
+        run: |
+          if [ -z "$CONVEX_DEPLOY_KEY" ]; then
+            echo "::error::Add the CONVEX_DEPLOY_KEY secret in GitHub (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+      - run: npm install
+
+      - name: Set up sign-in keys (first run only)
+        run: |
+          if [ -z "$(npx convex env get JWKS 2>/dev/null)" ]; then
+            node scripts/generate-keys.mjs
+            npx convex env set JWT_PRIVATE_KEY -- "$(cat .jwt_private)"
+            npx convex env set JWKS -- "$(cat .jwks)"
+            rm -f .jwt_private .jwks
+            echo "Sign-in keys created."
+          else
+            echo "Sign-in keys already set."
+          fi
+          npx convex env set SITE_URL -- "https://i-vertalyot.github.io"
+
+      - name: Deploy functions
+        run: npx convex deploy
