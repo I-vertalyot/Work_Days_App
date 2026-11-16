@@ -10,6 +10,8 @@ Each card is one week, Monday to Sunday, with the real dates. For every day you 
 
 The ⋯ button at the top right opens the handwriting choice for venues: Czech school, Quick note, Neat print, Notebook, Rounded or Typewriter.
 
+The same menu has **Export a month**: pick a month and download a one-page PDF time sheet with every day, venue, days worked, extra hours and the month totals.
+
 The card adds up the week, and the red stamp in the corner shows the total for the month.
 
 Move between weeks with the arrows on the left and right side of the screen, by swiping the card left or right on a phone, or with the ← → keys.

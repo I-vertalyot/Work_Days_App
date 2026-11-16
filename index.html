@@ -294,6 +294,23 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .more-btn[aria-expanded="true"] svg{fill:#1D1B18}
 .more-btn:focus-visible{outline:2px solid #F0E2BC;outline-offset:3px;border-radius:50%}
 .hand-pick[hidden]{display:none}
+.export{clear:both;margin-top:16px;padding-top:14px;border-top:1px solid rgba(226,203,148,.2)}
+.export-title{margin:0 0 10px;color:#E3D3AE;font:600 15px/1 var(--sans);font-stretch:85%}
+.export-row{display:flex;flex-wrap:wrap;gap:8px}
+#exportMonth{
+  flex:1 1 160px;min-height:44px;padding:0 12px;border-radius:10px;
+  background:#1B1F22;color:#EADBB8;border:1.5px solid rgba(226,203,148,.32);
+  font:600 16px var(--sans);
+}
+.export-btn{
+  min-height:44px;padding:0 18px;border-radius:10px;cursor:pointer;
+  background:#E8D4A3;color:#1D1B18;border:0;font:700 16px var(--sans);font-stretch:85%;
+}
+.export-btn:hover{background:#F1E2BA}
+.export-btn:disabled{opacity:.6;cursor:progress}
+.export-msg{margin:8px 0 0;min-height:0;color:#E3D3AE;font:500 14px/1.35 var(--sans)}
+.export-msg:empty{display:none}
+.export-msg.warn{color:#F0A08F}
 .topbar{width:100%;max-width:1040px;display:flex;justify-content:flex-end;margin-bottom:14px}
 .menu{position:relative;z-index:30}
 .hand-pick{
@@ -401,12 +418,21 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 <main class="desk">
   <div class="topbar">
     <div class="menu">
-  <button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="handPick" aria-label="Handwriting options" title="Handwriting options">
+  <button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="handPick" aria-label="Menu" title="Menu">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>
   </button>
   <fieldset class="hand-pick" id="handPick" hidden>
     <legend>Handwriting for venues</legend>
     <div class="chips" id="handChips"></div>
+    <div class="export">
+      <p class="export-title">Export a month</p>
+      <div class="export-row">
+        <label class="sr-only" for="exportMonth">Month to export</label>
+        <select id="exportMonth"></select>
+        <button type="button" class="export-btn" id="exportBtn">Download PDF</button>
+      </div>
+      <p class="export-msg" id="exportMsg" role="status"></p>
+    </div>
   </fieldset>
     </div>
   </div>
@@ -787,6 +813,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     if (input) input.checked = true;
   }
   function setMore(open){
+    if (open){ fillExportMonths(); exportMsg(""); }
     $("handPick").hidden = !open;
     $("moreBtn").setAttribute("aria-expanded", open ? "true" : "false");
   }
@@ -834,6 +861,205 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       applyHand(data.hand);
       try { window.localStorage.setItem(HAND_KEY, data.hand); } catch (e){}
     }
+  }
+
+
+  /* ---------- export a month as PDF ---------- */
+  function fillExportMonths(){
+    var sel = $("exportMonth");
+    var base = addDays(monday, 3);
+    var y = base.getFullYear(), m = base.getMonth();
+    var keep = sel.value;
+    sel.innerHTML = "";
+    for (var n = 0; n < 12; n++){
+      var d = new Date(y, m - n, 1);
+      var o = document.createElement("option");
+      o.value = d.getFullYear() + "-" + d.getMonth();
+      o.textContent = MONTHS[d.getMonth()] + " " + d.getFullYear();
+      sel.appendChild(o);
+    }
+    sel.value = keep && sel.querySelector('option[value="' + keep + '"]') ? keep : sel.options[0].value;
+  }
+
+  function monthRows(y, m){
+    var out = [], n = new Date(y, m + 1, 0).getDate();
+    for (var d = 1; d <= n; d++){
+      var date = new Date(y, m, d);
+      var i = (date.getDay() + 6) % 7;
+      var w = weeks[keyOf(mondayOf(date))];
+      var day = w ? w.days[i] : { v: "", d: 0, x: 0 };
+      out.push({ date: date, i: i, v: day.v.trim(), d: day.d, x: day.x });
+    }
+    return out;
+  }
+
+  function loadFonts(fams){
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    var all = Promise.all(fams.map(function (f){ return document.fonts.load(f).catch(function (){}); }));
+    return Promise.race([all, new Promise(function (r){ setTimeout(r, 3000); })]);
+  }
+
+  function fitText(ctx, text, max){
+    if (ctx.measureText(text).width <= max) return text;
+    while (text.length > 1 && ctx.measureText(text + "…").width > max) text = text.slice(0, -1);
+    return text + "…";
+  }
+
+  function drawMonth(y, m){
+    var W = 1240, H = 1754, M = 96;
+    var cv = document.createElement("canvas");
+    cv.width = W; cv.height = H;
+    var c = cv.getContext("2d");
+    var INK = "#1D1B18", RED = "#A82614", SOFT = "#5A5246";
+    var SANS = '"Archivo", "Arial Narrow", Arial, sans-serif';
+    var STEN = '"Big Shoulders Stencil", "Archivo", "Arial Narrow", sans-serif';
+    var h = handById(handId) || HANDS[0];
+    var HAND = h.fam + ', "Segoe Script", cursive';
+    function font(f, stretch){ c.font = f; try { c.fontStretch = stretch || "normal"; } catch (e){} }
+
+    c.fillStyle = "#FFFFFF"; c.fillRect(0, 0, W, H);
+    c.fillStyle = "#F3E6C2"; c.fillRect(0, 0, W, 18);
+
+    var rows = monthRows(y, m);
+    var totD = 0, totX = 0;
+    rows.forEach(function (r){ totD += r.d; totX += r.x; });
+
+    // header
+    c.fillStyle = INK; c.textBaseline = "alphabetic"; c.textAlign = "left";
+    font("700 26px " + SANS, "condensed"); c.fillText("Time card", M, M + 22);
+    font("900 66px " + SANS, "condensed"); c.fillText(MONTHS[m] + " " + y, M, M + 96);
+
+    // totals boxes (top right)
+    function box(x, label, value, color){
+      c.lineWidth = 3; c.strokeStyle = INK; c.strokeRect(x, M - 6, 190, 112);
+      font("700 20px " + SANS, "condensed"); c.fillStyle = INK; c.textAlign = "left"; c.fillText(label, x + 16, M + 22);
+      font("900 60px " + STEN); c.fillStyle = color; c.textAlign = "right"; c.fillText(value, x + 174, M + 92);
+    }
+    box(W - M - 190 - 210, "Days worked", fmtNum(totD), INK);
+    box(W - M - 190, "Extra hours", "+" + fmtNum(totX), RED);
+    c.textAlign = "left";
+
+    var ruleY = M + 132;
+    c.fillStyle = INK; c.fillRect(M, ruleY, W - 2 * M, 5);
+
+    // columns
+    var xDate = M + 4, xDay = M + 120, xVenue = M + 210, xDays = W - M - 190, xExtra = W - M - 8;
+    var headY = ruleY + 44;
+    font("700 20px " + SANS, "condensed"); c.fillStyle = INK;
+    c.fillText("Date", xDate, headY); c.fillText("Day", xDay, headY); c.fillText("Venue", xVenue, headY);
+    c.textAlign = "right"; c.fillText("Days", xDays, headY);
+    c.fillStyle = RED; c.fillText("Extra hours", xExtra, headY);
+    c.textAlign = "left";
+    c.fillStyle = INK; c.fillRect(M, headY + 14, W - 2 * M, 2);
+
+    var top = headY + 16, bottomLimit = H - M - 150;
+    var rowH = Math.min(44, Math.floor((bottomLimit - top) / rows.length));
+    rows.forEach(function (r, n){
+      var y0 = top + n * rowH, base = y0 + rowH * 0.7;
+      if (r.i >= 5){ c.fillStyle = "rgba(168,38,20,.06)"; c.fillRect(M, y0, W - 2 * M, rowH); }
+      if (r.i === 0 && n > 0){ c.fillStyle = INK; c.fillRect(M, y0 - 1, W - 2 * M, 3); }
+      c.fillStyle = INK;
+      font("800 27px " + STEN); c.fillText(dm(r.date), xDate, base);
+      font("700 21px " + SANS, "condensed"); c.fillText(DAY_SHORT[r.i], xDay, base);
+      if (r.v){
+        font("700 " + Math.round(25 * h.hs) + "px " + HAND);
+        c.fillText(fitText(c, r.v, xDays - 110 - xVenue), xVenue, base);
+      }
+      c.textAlign = "right";
+      if (r.d){ font("800 27px " + STEN); c.fillStyle = INK; c.fillText(fmtNum(r.d), xDays, base); }
+      if (r.x){ font("800 27px " + STEN); c.fillStyle = RED; c.fillText("+" + fmtNum(r.x) + " h", xExtra, base); }
+      c.textAlign = "left";
+      c.fillStyle = "rgba(29,27,24,.28)"; c.fillRect(M, y0 + rowH - 1, W - 2 * M, 1);
+    });
+
+    // month total
+    var endY = top + rows.length * rowH;
+    c.fillStyle = INK; c.fillRect(M, endY + 2, W - 2 * M, 4);
+    var tY = endY + 64;
+    font("800 32px " + SANS, "condensed"); c.fillText("Month total", M, tY);
+    c.textAlign = "right";
+    font("900 44px " + STEN); c.fillText(fmtNum(totD) + "", xDays - 64, tY);
+    font("700 22px " + SANS, "condensed"); c.fillText(daysWord(totD), xDays, tY);
+    font("900 44px " + STEN); c.fillStyle = RED; c.fillText("+" + fmtNum(totX) + " h", xExtra, tY);
+    c.textAlign = "left";
+
+    var now = new Date();
+    font("500 18px " + SANS); c.fillStyle = SOFT;
+    c.fillText("Exported " + dm(now) + now.getFullYear() + " from Work days", M, H - M + 30);
+    return cv;
+  }
+
+  function canvasJpeg(cv){
+    return new Promise(function (res, rej){
+      cv.toBlob(function (b){
+        if (!b) return rej(new Error("no image"));
+        b.arrayBuffer().then(function (buf){ res(new Uint8Array(buf)); }, rej);
+      }, "image/jpeg", 0.92);
+    });
+  }
+
+  function buildPdf(jpeg, iw, ih){
+    var enc = new TextEncoder(), parts = [], len = 0, offs = [];
+    function add(x){ var b = typeof x === "string" ? enc.encode(x) : x; parts.push(b); len += b.length; }
+    function obj(n, body){ offs[n] = len; add(n + " 0 obj\n" + body + "\nendobj\n"); }
+    var PW = 595.28, PH = 841.89;
+    add("%PDF-1.4\n%âãÏÓ\n");
+    obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+    obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+    obj(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + PW + " " + PH + "] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>");
+    var content = "q " + PW + " 0 0 " + PH + " 0 0 cm /Im0 Do Q";
+    obj(4, "<< /Length " + content.length + " >>\nstream\n" + content + "\nendstream");
+    offs[5] = len;
+    add("5 0 obj\n<< /Type /XObject /Subtype /Image /Width " + iw + " /Height " + ih + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + jpeg.length + " >>\nstream\n");
+    add(jpeg);
+    add("\nendstream\nendobj\n");
+    var xref = len, x = "xref\n0 6\n0000000000 65535 f \n";
+    for (var n = 1; n <= 5; n++) x += String(offs[n]).padStart(10, "0") + " 00000 n \n";
+    add(x + "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n");
+    return new Blob(parts, { type: "application/pdf" });
+  }
+
+  function exportMsg(text, warn){
+    var e = $("exportMsg");
+    e.textContent = text || "";
+    e.classList.toggle("warn", !!warn);
+  }
+
+  function savePdf(blob, filename){
+    var c = window.claude;
+    var viaClaude = c && typeof c.use === "function" && window.top !== window.self;
+    var p = viaClaude ? c.use("downloads").catch(function (){ return null; }) : Promise.resolve(null);
+    return p.then(function (dl){
+      if (dl) return dl.save({ filename: filename, data: blob }).then(function (){ return "saved"; });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function (){ URL.revokeObjectURL(url); }, 4000);
+      return "saved";
+    });
+  }
+
+  function exportMonth(){
+    var parts = $("exportMonth").value.split("-");
+    var y = +parts[0], m = +parts[1];
+    var btn = $("exportBtn");
+    btn.disabled = true;
+    exportMsg("Making the PDF…");
+    var h = handById(handId) || HANDS[0];
+    loadFonts(['900 40px "Archivo"', '800 40px "Big Shoulders Stencil"', '700 24px ' + h.fam])
+      .then(function (){ return canvasJpeg(drawMonth(y, m)); })
+      .then(function (jpeg){
+        var blob = buildPdf(jpeg, 1240, 1754);
+        return savePdf(blob, "Work days " + y + "-" + pad(m + 1) + ".pdf");
+      })
+      .then(function (){ exportMsg(MONTHS[m] + " " + y + " PDF is ready."); },
+            function (e){
+              var code = e && e.code;
+              if (code === "declined") exportMsg("");
+              else exportMsg("Couldn't make the PDF. Try again.", true);
+            })
+      .then(function (){ btn.disabled = false; });
   }
 
   /* ---------- painting ---------- */
@@ -1235,6 +1461,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   /* ---------- start ---------- */
   buildRows();
   buildHandPicker();
+  $("exportBtn").addEventListener("click", exportMonth);
   renderWeek(false);
   setInterval(tick, 30000);
   setStatus();
