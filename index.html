@@ -276,6 +276,38 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .status:not([data-tone="warn"]){position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 
+/* ---------- swipe hint ---------- */
+.swipe-hint{
+  position:fixed;left:50%;top:50%;z-index:40;pointer-events:none;
+  display:flex;align-items:center;gap:8px;
+  padding:10px 18px 10px 12px;border-radius:999px;
+  background:rgba(27,31,34,.94);color:#F1E2BA;
+  box-shadow:0 10px 30px rgba(0,0,0,.4);
+  font:800 18px/1 var(--sans);font-stretch:80%;
+  opacity:0;transform:translate(-50%,-50%);
+}
+.swipe-hint .sh-arrow{width:26px;height:26px}
+.swipe-hint[data-dir="right"]{flex-direction:row-reverse;padding:10px 12px 10px 18px}
+.swipe-hint[data-dir="right"] .sh-arrow{transform:scaleX(-1)}
+.swipe-hint.play[data-dir="left"]{animation:hintLeft .65s ease-out forwards}
+.swipe-hint.play[data-dir="right"]{animation:hintRight .65s ease-out forwards}
+@keyframes hintLeft{
+  0%{opacity:0;transform:translate(calc(-50% + 30px),-50%) scale(.9)}
+  25%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  70%{opacity:1;transform:translate(calc(-50% - 18px),-50%)}
+  100%{opacity:0;transform:translate(calc(-50% - 60px),-50%)}
+}
+@keyframes hintRight{
+  0%{opacity:0;transform:translate(calc(-50% - 30px),-50%) scale(.9)}
+  25%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  70%{opacity:1;transform:translate(calc(-50% + 18px),-50%)}
+  100%{opacity:0;transform:translate(calc(-50% + 60px),-50%)}
+}
+@media (prefers-reduced-motion:reduce){
+  .swipe-hint.play[data-dir]{animation:hintFade .7s linear forwards}
+  @keyframes hintFade{0%,70%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-50%)}}
+}
+
 /* ---------- handwriting picker ---------- */
 .more-btn{
   appearance:none;display:grid;place-items:center;
@@ -429,6 +461,10 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 </head>
 <body>
 <main class="desk">
+  <div class="swipe-hint" id="swipeHint" aria-hidden="true">
+    <svg class="sh-arrow" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="#F1E2BA" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span class="sh-week"></span>
+  </div>
   <div class="topbar">
     <div class="menu">
   <button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="handPick" aria-label="Menu" title="Menu">
@@ -1512,9 +1548,22 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   }
 
   /* ---------- navigation ---------- */
-  function go(deltaWeeks){
+  function go(deltaWeeks, arrow){
     monday = addDays(monday, 7 * deltaWeeks);
     renderWeek(deltaWeeks > 0 ? 1 : -1);
+    showSwipeHint(arrow || (deltaWeeks > 0 ? "left" : "right"));
+  }
+
+  /* short arrow badge showing which way the week was turned */
+  var hintEl = $("swipeHint"), hintTimer = 0;
+  function showSwipeHint(dir){
+    hintEl.querySelector(".sh-week").textContent = "Week " + isoWeek(monday);
+    hintEl.setAttribute("data-dir", dir);
+    hintEl.classList.remove("play");
+    void hintEl.offsetWidth;
+    hintEl.classList.add("play");
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(function (){ hintEl.classList.remove("play"); }, 700);
   }
 
   /* swipe left / right on the card to change week */
@@ -1570,8 +1619,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     var t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.getAttribute("role") === "spinbutton")) return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
-    if (e.key === "ArrowLeft"){ go(-1); e.preventDefault(); }
-    else if (e.key === "ArrowRight"){ go(1); e.preventDefault(); }
+    if (e.key === "ArrowLeft"){ go(-1, "left"); e.preventDefault(); }
+    else if (e.key === "ArrowRight"){ go(1, "right"); e.preventDefault(); }
   });
 
   /* ---------- installable app: work offline when opened from its own website ---------- */
