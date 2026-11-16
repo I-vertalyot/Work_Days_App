@@ -494,13 +494,13 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
           <label class="sr-only" for="syncEmail">Email</label>
           <input class="sync-input" id="syncEmail" type="email" autocomplete="email" inputmode="email" placeholder="Email">
           <label class="sr-only" for="syncPass">Password</label>
-          <input class="sync-input" id="syncPass" type="password" autocomplete="current-password" placeholder="Password, at least 6 characters">
+          <input class="sync-input" id="syncPass" type="password" autocomplete="current-password" placeholder="Password, at least 8 characters">
           <div class="export-row">
             <button type="submit" class="export-btn" id="syncSignIn">Sign in</button>
             <button type="button" class="ghost-btn" id="syncCreate">Create account</button>
           </div>
         </form>
-        <p class="sync-note">Use the same email and password on each device. <button type="button" class="link-btn" id="syncForgot">Forgot password?</button></p>
+        <p class="sync-note">Use the same email and password on each device.</p>
       </div>
       <div id="syncIn" hidden>
         <p class="sync-who">Syncing as <b id="syncWho"></b></p>
@@ -1224,11 +1224,11 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   window.addEventListener("resize", alignVenues);
 
 
-  /* ---------- sync across devices (Firebase), used outside Claude ---------- */
-  // Paste the web app settings from your Firebase project here (they are not secret).
-  var FIREBASE_CONFIG = null;
-  var FB_VERSION = "10.12.2";
-  var fbAuth = null, fbStore = null, fbUser = null, fbStarted = false;
+  /* ---------- sync across devices (Convex), used outside Claude ---------- */
+  var CONVEX_URL = "https://dynamic-armadillo-46.eu-west-1.convex.cloud";
+  var CONVEX_LIB = "https://cdn.jsdelivr.net/npm/convex@1/dist/browser.bundle.js";
+  var SESSION_KEY = "workdays.session", CACHE_KEY = "workdays.cache", PENDING_KEY = "workdays.pending";
+  var cx = null, cxHttp = null, cxApi = null, syncStarted = false, jwt = null, session = null, attached = false;
   var inClaudeFrame = window.top !== window.self;
 
   function loadScript(src){
@@ -1238,125 +1238,194 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       document.head.appendChild(el);
     });
   }
+  function lsGet(k){ try { return JSON.parse(window.localStorage.getItem(k) || "null"); } catch (e){ return null; } }
+  function lsSet(k, v){ try { if (v === null) window.localStorage.removeItem(k); else window.localStorage.setItem(k, JSON.stringify(v)); } catch (e){} }
+
   function syncMsg(text, warn){
     var e = $("syncMsg"); e.textContent = text || ""; e.classList.toggle("warn", !!warn);
   }
   function paintSync(){
-    var box = $("syncBox");
-    box.hidden = !fbStarted;
-    if (!fbStarted) return;
-    $("syncOut").hidden = !!fbUser;
-    $("syncIn").hidden = !fbUser;
-    if (fbUser) $("syncWho").textContent = fbUser.email || "your account";
+    $("syncBox").hidden = !syncStarted;
+    if (!syncStarted) return;
+    $("syncOut").hidden = !!session;
+    $("syncIn").hidden = !session;
+    if (session) $("syncWho").textContent = session.email || "your account";
   }
   function authError(e){
-    var c = e && e.code || "";
-    if (/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)) return "Wrong email or password.";
-    if (/email-already-in-use/.test(c)) return "That email already has an account. Sign in instead.";
-    if (/weak-password/.test(c)) return "Use a password with at least 6 characters.";
-    if (/invalid-email|missing-email/.test(c)) return "Check the email address.";
-    if (/missing-password/.test(c)) return "Enter your password.";
-    if (/network-request-failed/.test(c)) return "No connection. Try again when you're online.";
-    if (/too-many-requests/.test(c)) return "Too many tries. Wait a moment and try again.";
-    if (/operation-not-allowed/.test(c)) return "Email sign-in isn't switched on in Firebase yet.";
+    var m = String((e && (e.data || e.message)) || e || "");
+    if (/InvalidSecret|InvalidAccountId|Invalid credentials/i.test(m)) return "Wrong email or password.";
+    if (/already exists/i.test(m)) return "That email already has an account. Sign in instead.";
+    if (/Invalid password/i.test(m)) return "Use a password with at least 8 characters.";
+    if (/TooManyFailedAttempts|rate/i.test(m)) return "Too many tries. Wait a moment and try again.";
+    if (/fetch|network|Failed to/i.test(m)) return "No connection. Try again when you're online.";
     return "Couldn't sign in. Try again.";
   }
 
-  function attachFirebase(u){
-    if (unsub){ try { unsub(); } catch (e){} unsub = null; }
-    // entries kept only on this device are merged into the account once
-    if (mode === "local" || mode === "memory"){
-      Object.keys(weeks).forEach(function (k){
-        if (!parseKey(k)) return;
-        weeks[k].days.forEach(function (d, i){
-          if (d.v.trim()) dirty.set(k + "|" + i + "|v", ++ver);
-          if (d.d) dirty.set(k + "|" + i + "|d", ++ver);
-          if (d.x) dirty.set(k + "|" + i + "|x", ++ver);
-        });
+  // Sign-in tokens: a short-lived token for requests and a long-lived one to renew it.
+  function useTokens(tokens, email){
+    if (!tokens || !tokens.token) return false;
+    jwt = tokens.token;
+    session = { refreshToken: tokens.refreshToken, email: email || (session && session.email) || "" };
+    lsSet(SESSION_KEY, session);
+    return true;
+  }
+  function refreshTokens(){
+    if (!session || !session.refreshToken) return Promise.resolve(null);
+    return cxHttp.action(cxApi.auth.signIn, { refreshToken: session.refreshToken }).then(function (r){
+      if (r && r.tokens && useTokens(r.tokens)) return jwt;
+      return null;
+    }, function (e){
+      // offline: keep the session and try again later; a rejected token ends it
+      if (/fetch|network|Failed to/i.test(String(e && e.message))) return jwt;
+      return null;
+    });
+  }
+  function fetchToken(opts){
+    if (opts && opts.forceRefreshToken) return refreshTokens();
+    return jwt ? Promise.resolve(jwt) : refreshTokens();
+  }
+  function startAuth(){
+    cx.setAuth(fetchToken, function (ok){
+      if (ok){ paintSync(); if (!attached) attachSync(); }
+      else if (session && !jwt){ endSession("Your sign-in expired. Sign in again to keep syncing.", true); }
+    });
+  }
+
+  // A small adapter so the existing saving code can talk to Convex.
+  function convexCollection(){
+    return {
+      doc: function (k){
+        return { set: function (body){ return cx.mutation(cxApi.weeks.save, { key: k, data: body }); } };
+      },
+      onSnapshot: function (next, onErr){
+        var prev = {};
+        return cx.onUpdate(cxApi.weeks.list, {}, function (rows){
+          if (rows === null || rows === undefined) return;
+          var seen = {}, changes = [];
+          rows.forEach(function (r){
+            var json = JSON.stringify(r.data);
+            seen[r.key] = json;
+            if (prev[r.key] !== json){
+              changes.push({ type: prev[r.key] === undefined ? "added" : "modified",
+                doc: { id: r.key, data: (function (d){ return function (){ return d; }; })(r.data) } });
+            }
+          });
+          Object.keys(prev).forEach(function (k){
+            if (!(k in seen)) changes.push({ type: "removed", doc: { id: k, data: function (){ return null; } } });
+          });
+          prev = seen;
+          next({ docChanges: function (){ return changes; }, metadata: { fromCache: false } });
+        }, function (e){ if (onErr) onErr({ code: "unavailable", message: String(e && e.message) }); });
+      }
+    };
+  }
+
+  function markLocalAsEdits(){
+    Object.keys(weeks).forEach(function (k){
+      if (!parseKey(k)) return;
+      weeks[k].days.forEach(function (d, i){
+        if (d.v.trim()) dirty.set(k + "|" + i + "|v", ++ver);
+        if (d.d) dirty.set(k + "|" + i + "|d", ++ver);
+        if (d.x) dirty.set(k + "|" + i + "|x", ++ver);
       });
-    }
-    col = fbStore.collection("users/" + u.uid + "/weeks");
+    });
+  }
+  function attachSync(){
+    attached = true;
+    if (unsub){ try { unsub(); } catch (e){} unsub = null; }
+    if (mode === "local" || mode === "memory") markLocalAsEdits();
+    col = convexCollection();
     mode = "account"; ready = false; unreachable = false; problem = null;
     subscribe();
     setStatus();
   }
-  function detachFirebase(){
+  function endSession(message, warn){
     if (unsub){ try { unsub(); } catch (e){} unsub = null; }
+    attached = false; jwt = null; session = null;
+    lsSet(SESSION_KEY, null);
+    try { cx && cx.clearAuth(); } catch (e){}
     col = null; ready = false;
     mode = "local";
     persistLocal();
+    lsSet(CACHE_KEY, null); lsSet(PENDING_KEY, null);
     dirty.clear();
+    paintSync();
+    if (message) syncMsg(message, warn);
     setStatus();
   }
+
+  // Keep a copy on the device while signed in, so it opens offline and
+  // changes made offline are sent once the connection is back.
+  var cacheTimer = 0;
+  function persistSyncCache(){
+    if (!session) return;
+    clearTimeout(cacheTimer);
+    cacheTimer = setTimeout(function (){
+      lsSet(CACHE_KEY, weeks);
+      lsSet(PENDING_KEY, Array.from(dirty.keys()));
+    }, 150);
+  }
+  function restoreSyncCache(){
+    var cache = lsGet(CACHE_KEY), pending = lsGet(PENDING_KEY) || [];
+    if (cache && typeof cache === "object"){
+      Object.keys(cache).forEach(function (k){ if (parseKey(k)) applyIncoming(k, cache[k]); });
+    }
+    pending.forEach(function (key){ if (typeof key === "string") dirty.set(key, ++ver); });
+    refreshValues();
+    updateVenueList();
+  }
   function onAccountReady(){
-    // the account now holds everything; this device's separate copy is no longer needed
-    if (fbUser){ try { window.localStorage.removeItem(LS_KEY); } catch (e){} }
+    // everything is in the account now; this device's separate copy is no longer needed
+    if (session){ try { window.localStorage.removeItem(LS_KEY); } catch (e){} persistSyncCache(); }
   }
 
-  function startFirebase(){
-    if (!FIREBASE_CONFIG || inClaudeFrame) return;
-    var base = "https://www.gstatic.com/firebasejs/" + FB_VERSION + "/";
-    loadScript(base + "firebase-app-compat.js")
-      .then(function (){ return Promise.all([loadScript(base + "firebase-auth-compat.js"), loadScript(base + "firebase-firestore-compat.js")]); })
-      .then(function (){
-        var fb = window.firebase;
-        fb.initializeApp(FIREBASE_CONFIG);
-        fbAuth = fb.auth();
-        fbStore = fb.firestore();
-        try { fbStore.enablePersistence({ synchronizeTabs: true }).catch(function (){}); } catch (e){}
-        fbStarted = true;
-        paintSync();
-        fbAuth.onAuthStateChanged(function (u){
-          var was = fbUser;
-          fbUser = u;
-          paintSync();
-          if (u && (!was || was.uid !== u.uid)) attachFirebase(u);
-          else if (!u && was) detachFirebase();
-        });
-      })
-      .catch(function (){ fbStarted = false; paintSync(); });
+  function startSync(){
+    if (inClaudeFrame) return;
+    session = lsGet(SESSION_KEY);
+    if (session) restoreSyncCache();
+    loadScript(CONVEX_LIB).then(function (){
+      var lib = window.convex;
+      cx = new lib.ConvexClient(CONVEX_URL);
+      cxHttp = new lib.ConvexHttpClient(CONVEX_URL);
+      cxApi = lib.anyApi;
+      syncStarted = true;
+      paintSync();
+      if (session) startAuth();
+    }).catch(function (){
+      syncStarted = false; paintSync();
+    });
   }
 
   function wireSync(){
-    function creds(){
-      return { email: $("syncEmail").value.trim(), pass: $("syncPass").value };
-    }
+    function creds(){ return { email: $("syncEmail").value.trim(), pass: $("syncPass").value }; }
     function busy(on){ ["syncSignIn", "syncCreate"].forEach(function (id){ $(id).disabled = on; }); }
-    $("syncForm").addEventListener("submit", function (e){
-      e.preventDefault();
-      if (!fbAuth) return;
+    function go(flow){
+      if (!cxHttp) return;
       var c = creds();
-      if (!c.email || !c.pass){ syncMsg("Enter your email and password.", true); return; }
-      busy(true); syncMsg("Signing in…");
-      fbAuth.signInWithEmailAndPassword(c.email, c.pass)
-        .then(function (){ syncMsg("Signed in. Your entries now sync."); $("syncPass").value = ""; },
-              function (err){ syncMsg(authError(err), true); })
+      if (!c.email || !c.pass){ syncMsg(flow === "signUp" ? "Enter an email and a password to create your account." : "Enter your email and password.", true); return; }
+      busy(true);
+      syncMsg(flow === "signUp" ? "Creating your account…" : "Signing in…");
+      cxHttp.action(cxApi.auth.signIn, { provider: "password", params: { email: c.email, password: c.pass, flow: flow } })
+        .then(function (r){
+          if (!r || !useTokens(r.tokens, c.email)) throw new Error("No tokens");
+          $("syncPass").value = "";
+          syncMsg(flow === "signUp" ? "Account created. Sign in with it on your other devices." : "Signed in. Your entries now sync.");
+          paintSync();
+          startAuth();
+        })
+        .catch(function (e){ syncMsg(authError(e), true); })
         .then(function (){ busy(false); });
-    });
-    $("syncCreate").addEventListener("click", function (){
-      if (!fbAuth) return;
-      var c = creds();
-      if (!c.email || !c.pass){ syncMsg("Enter an email and a password to create your account.", true); return; }
-      busy(true); syncMsg("Creating your account…");
-      fbAuth.createUserWithEmailAndPassword(c.email, c.pass)
-        .then(function (){ syncMsg("Account created. Sign in with it on your other devices."); $("syncPass").value = ""; },
-              function (err){ syncMsg(authError(err), true); })
-        .then(function (){ busy(false); });
-    });
-    $("syncForgot").addEventListener("click", function (){
-      if (!fbAuth) return;
-      var email = $("syncEmail").value.trim();
-      if (!email){ syncMsg("Type your email above first.", true); return; }
-      fbAuth.sendPasswordResetEmail(email)
-        .then(function (){ syncMsg("Check your email for a link to set a new password."); },
-              function (err){ syncMsg(authError(err), true); });
-    });
+    }
+    $("syncForm").addEventListener("submit", function (e){ e.preventDefault(); go("signIn"); });
+    $("syncCreate").addEventListener("click", function (){ go("signUp"); });
     $("syncSignOut").addEventListener("click", function (){
-      if (!fbAuth) return;
-      fbAuth.signOut().then(function (){ syncMsg("Signed out. Entries stay on this device."); });
+      var token = jwt;
+      if (cxHttp && token){
+        try { cxHttp.setAuth(token); cxHttp.action(cxApi.auth.signOut, {}).catch(function (){}); } catch (e){}
+      }
+      endSession("Signed out. Entries stay on this device.");
     });
   }
-
   /* ---------- painting ---------- */
   function renderWeek(animate){
     var sunday = addDays(monday, 6);
@@ -1539,6 +1608,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     paintTotals();
     paintStamp();
     scheduleSave(k);
+    if (typeof persistSyncCache === "function") persistSyncCache();
   }
 
   function scheduleSave(k){
@@ -1571,6 +1641,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     }).then(function (){
       clearDirtyFor(k, snap);
       inflight--;
+      if (typeof persistSyncCache === "function") persistSyncCache();
       setStatus();
     }, function (e){
       inflight--;
@@ -1654,7 +1725,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   }
 
   function connect(){
-    if (window.top === window.self){ startLocal(); startFirebase(); return; }
+    if (window.top === window.self){ startLocal(); startSync(); return; }
     waitForClaude(2000).then(function (c){
       if (!c) return startLocal();
       return Promise.all([
@@ -1695,6 +1766,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       refreshValues();
       updateVenueList();
       setStatus();
+      if (typeof persistSyncCache === "function") persistSyncCache();
     }, function (e){
       clearTimeout(timer);
       var code = e && e.code;

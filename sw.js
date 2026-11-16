@@ -1,5 +1,5 @@
 // Keeps Work days working offline once it has been opened.
-const CACHE = "workdays-v21";
+const CACHE = "workdays-v22";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon-32.png"];
 
 self.addEventListener("install", (e) => {
@@ -18,13 +18,13 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  // Only the app's own files, its fonts and the Firebase library are cached.
+  // Only the app's own files, its fonts and the Convex library are cached.
   // Sync traffic (Firestore, sign-in) always goes straight to the network.
   const cacheable =
     url.origin === self.location.origin ||
     url.hostname === "fonts.googleapis.com" ||
     url.hostname === "fonts.gstatic.com" ||
-    (url.hostname === "www.gstatic.com" && url.pathname.startsWith("/firebasejs/"));
+    (url.hostname === "cdn.jsdelivr.net" && url.pathname.startsWith("/npm/convex@"));
   if (!cacheable) return;
   // The page itself: try the network first so updates arrive, fall back to the saved copy offline.
   if (req.mode === "navigate") {
