@@ -12,7 +12,7 @@ Under the card you can pick the handwriting used for venues: Czech school, Quick
 
 The card adds up the week, and the red stamp in the corner shows the total for the month.
 
-Move between weeks with the arrows above the card, by swiping the card left or right on a phone, or with the ← → keys.
+Move between weeks with the arrows on the left and right side of the screen, by swiping the card left or right on a phone, or with the ← → keys.
 
 ## Running it
 

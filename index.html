@@ -51,7 +51,22 @@ body{background:#1B1F22;font-family:var(--sans);color:var(--ink);-webkit-font-sm
 }
 
 /* ---------- folder tabs ---------- */
-.tabs{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 0 10px}
+.tabs{display:flex;justify-content:center;align-items:center;min-height:0;padding:0 0 10px}
+.side-arrow{
+  position:fixed;top:50%;z-index:20;transform:translateY(-50%);
+  display:grid;place-items:center;width:56px;height:56px;padding:0;cursor:pointer;
+  border-radius:50%;border:1.5px solid rgba(226,203,148,.35);
+  background:rgba(27,31,34,.78);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
+  transition:background-color .15s,border-color .15s;
+}
+.side-arrow:hover{background:rgba(52,58,63,.92);border-color:rgba(226,203,148,.7)}
+.side-arrow:active{background:rgba(70,78,84,.95)}
+.side-arrow svg{width:26px;height:26px}
+.side-prev{left:max(10px, calc(50% - 520px - 76px))}
+.side-next{right:max(10px, calc(50% - 520px - 76px))}
+.side-arrow:focus-visible{outline:2px solid #F0E2BC;outline-offset:3px;border-radius:50%}
 .tab{
   appearance:none;display:inline-grid;place-items:center;
   width:48px;height:48px;padding:0;border:0;border-radius:50%;
@@ -260,8 +275,14 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 @media (max-width:720px){
   .desk{padding:22px 12px 48px}
   .tabs{padding-bottom:6px}
+  .side-arrow{width:24px;height:72px;box-shadow:0 4px 10px rgba(0,0,0,.3);border-radius:0 14px 14px 0;border-left:0}
+  .side-next{border-radius:14px 0 0 14px;border-left:1.5px solid rgba(226,203,148,.35);border-right:0}
+  .side-prev{left:0}
+  .side-next{right:0}
+  .side-arrow svg{width:18px;height:18px}
+  .side-arrow:focus-visible{border-radius:8px}
   .tab-today{height:38px;font-size:15px}
-  .card{padding:22px 16px 18px;clip-path:polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%)}
+  .card{padding:22px 20px 18px;clip-path:polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%)}
   .card-head{gap:12px;padding-bottom:14px}
   .card-head > div:first-child{min-width:0}
   .card-head h1{font-size:16px}
@@ -321,15 +342,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 <main class="desk">
   <div class="card-wrap">
     <nav class="tabs" aria-label="Weeks">
-      <button type="button" class="tab" id="prevBtn" aria-label="Previous week" title="Previous week">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <span class="spacer"></span>
       <button type="button" class="tab tab-today" id="todayBtn" hidden>Back to this week</button>
-      <span class="spacer"></span>
-      <button type="button" class="tab" id="nextBtn" aria-label="Next week" title="Next week">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
     </nav>
 
     <section class="card" id="card" aria-labelledby="cardTitle">
@@ -379,6 +392,12 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     </svg>
   </div>
 
+  <button type="button" class="side-arrow side-prev" id="prevBtn" aria-label="Previous week" title="Previous week">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button type="button" class="side-arrow side-next" id="nextBtn" aria-label="Next week" title="Next week">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
   <p class="status" id="status" role="status" data-tone="busy">Opening your log…</p>
   <fieldset class="hand-pick">
     <legend>Handwriting for venues</legend>
