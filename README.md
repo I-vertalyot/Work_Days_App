@@ -14,7 +14,7 @@ The same menu has **Export a month**: pick a month and download a one-page PDF t
 
 The card adds up the week, and the red stamp in the corner shows the total for the month.
 
-Move between weeks with the arrows on the left and right side of the screen, by swiping the card left or right on a phone, or with the ← → keys.
+Move between weeks by swiping the card left or right (on a phone, a trackpad, or by dragging with the mouse), or with the ← → keys.
 
 ## Running it
 

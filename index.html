@@ -61,21 +61,6 @@ body{background:#1B1F22;font-family:var(--sans);color:var(--ink);-webkit-font-sm
 
 /* ---------- folder tabs ---------- */
 .tabs{display:flex;justify-content:center;align-items:center;min-height:0;padding:0 0 10px}
-.side-arrow{
-  position:fixed;top:50%;z-index:20;transform:translateY(-50%);
-  display:grid;place-items:center;width:56px;height:56px;padding:0;cursor:pointer;
-  border-radius:50%;border:1.5px solid rgba(226,203,148,.35);
-  background:rgba(27,31,34,.78);
-  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
-  box-shadow:0 6px 18px rgba(0,0,0,.35);
-  transition:background-color .15s,border-color .15s;
-}
-.side-arrow:hover{background:rgba(52,58,63,.92);border-color:rgba(226,203,148,.7)}
-.side-arrow:active{background:rgba(70,78,84,.95)}
-.side-arrow svg{width:26px;height:26px}
-.side-prev{left:max(10px, calc(50% - 520px - 76px))}
-.side-next{right:max(10px, calc(50% - 520px - 76px))}
-.side-arrow:focus-visible{outline:2px solid #F0E2BC;outline-offset:3px;border-radius:50%}
 .tab{
   appearance:none;display:inline-grid;place-items:center;
   width:48px;height:48px;padding:0;border:0;border-radius:50%;
@@ -348,12 +333,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .desk{padding:calc(10px + env(safe-area-inset-top)) 12px 48px}
   .topbar{margin-bottom:8px}
   .tabs{padding-bottom:6px}
-  .side-arrow{width:24px;height:72px;box-shadow:0 4px 10px rgba(0,0,0,.3);border-radius:0 14px 14px 0;border-left:0}
-  .side-next{border-radius:14px 0 0 14px;border-left:1.5px solid rgba(226,203,148,.35);border-right:0}
-  .side-prev{left:0}
-  .side-next{right:0}
-  .side-arrow svg{width:18px;height:18px}
-  .side-arrow:focus-visible{border-radius:8px}
   .tab-today{height:38px;font-size:15px}
   .card{padding:22px 20px 18px;clip-path:polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%)}
   .card-head{gap:12px;padding-bottom:14px;flex-wrap:wrap}
@@ -486,12 +465,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     </svg>
   </div>
 
-  <button type="button" class="side-arrow side-prev" id="prevBtn" aria-label="Previous week" title="Previous week">
-    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
-  <button type="button" class="side-arrow side-next" id="nextBtn" aria-label="Next week" title="Next week">
-    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
   <p class="status" id="status" role="status" data-tone="busy">Opening your log…</p>
 
 </main>
@@ -1069,8 +1042,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     $("weekNo").textContent = isoWeek(monday);
     $("rangeLong").textContent = rangeLabel(monday, sunday, false);
     $("rangeShort").textContent = rangeLabel(monday, sunday, true);
-    $("prevBtn").setAttribute("aria-label", "Previous week, week " + isoWeek(addDays(monday, -7)));
-    $("nextBtn").setAttribute("aria-label", "Next week, week " + isoWeek(addDays(monday, 7)));
     $("todayBtn").hidden = +mondayOf(today) === +monday;
     rows.forEach(function (r, i){
       var d = addDays(monday, i);
@@ -1436,12 +1407,36 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     go(dx < 0 ? 1 : -1);
   }, { passive: true });
   cardEl.addEventListener("touchcancel", function (){ sx = null; }, { passive: true });
-  $("prevBtn").addEventListener("click", function (){ go(-1); });
-  $("nextBtn").addEventListener("click", function (){ go(1); });
+
+  /* drag the card sideways with a mouse */
+  var mx = null, my = 0;
+  cardEl.addEventListener("pointerdown", function (e){
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    if (e.target.closest("input, button, select, label, .suggest")) return;
+    mx = e.clientX; my = e.clientY;
+  });
+  window.addEventListener("pointerup", function (e){
+    if (mx === null) return;
+    var dx = e.clientX - mx, dy = e.clientY - my;
+    mx = null;
+    if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    go(dx < 0 ? 1 : -1);
+  });
+
+  /* two-finger sideways swipe on a trackpad */
+  var wx = 0, wLock = 0;
+  window.addEventListener("wheel", function (e){
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    var now = Date.now();
+    if (now < wLock) return;
+    wx += e.deltaX;
+    if (Math.abs(wx) > 120){ go(wx > 0 ? 1 : -1); wx = 0; wLock = now + 700; }
+    clearTimeout(wheelReset); wheelReset = setTimeout(function (){ wx = 0; }, 200);
+  }, { passive: true });
+  var wheelReset = 0;
   $("todayBtn").addEventListener("click", function (){
     monday = mondayOf(new Date());
     renderWeek(true);
-    $("prevBtn").focus();
   });
   document.addEventListener("keydown", function (e){
     var t = e.target;
