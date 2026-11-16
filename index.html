@@ -918,91 +918,151 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   }
 
   function drawMonth(y, m){
-    var W = 1240, H = 1754, M = 96;
+    var S = 4 / 3, W = 1240, H = 1754;
     var cv = document.createElement("canvas");
-    cv.width = W; cv.height = H;
+    cv.width = Math.round(W * S); cv.height = Math.round(H * S);
     var c = cv.getContext("2d");
-    var INK = "#1D1B18", RED = "#A82614", SOFT = "#5A5246";
+    c.scale(S, S);
+    var INK = "#1D1B18", RED = "#A82614", DESK = "#23282C", SOFT = "#4A4337", RULE = "rgba(29,27,24,.32)";
     var SANS = '"Archivo", "Arial Narrow", Arial, sans-serif';
     var STEN = '"Big Shoulders Stencil", "Archivo", "Arial Narrow", sans-serif';
     var h = handById(handId) || HANDS[0];
     var HAND = h.fam + ', "Segoe Script", cursive';
     function font(f, stretch){ c.font = f; try { c.fontStretch = stretch || "normal"; } catch (e){} }
 
-    c.fillStyle = "#FFFFFF"; c.fillRect(0, 0, W, H);
-    c.fillStyle = "#F3E6C2"; c.fillRect(0, 0, W, 18);
-
     var rows = monthRows(y, m);
     var totD = 0, totX = 0;
     rows.forEach(function (r){ totD += r.d; totX += r.x; });
 
-    // header
-    c.fillStyle = INK; c.textBaseline = "alphabetic"; c.textAlign = "left";
-    font("700 26px " + SANS, "condensed"); c.fillText("Time card", M, M + 22);
-    font("900 66px " + SANS, "condensed"); c.fillText(MONTHS[m] + " " + y, M, M + 96);
+    // desk
+    var g = c.createRadialGradient(W / 2, 0, 40, W / 2, 0, H);
+    g.addColorStop(0, "#3B444A"); g.addColorStop(.5, "#262B2F"); g.addColorStop(1, "#1B1F22");
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
 
-    // totals boxes (top right)
-    function box(x, label, value, color){
-      c.lineWidth = 3; c.strokeStyle = INK; c.strokeRect(x, M - 6, 190, 112);
-      font("700 20px " + SANS, "condensed"); c.fillStyle = INK; c.textAlign = "left"; c.fillText(label, x + 16, M + 22);
-      font("900 60px " + STEN); c.fillStyle = color; c.textAlign = "right"; c.fillText(value, x + 174, M + 92);
+    // card with clipped corner
+    var CX = 56, CY = 56, CW = W - 112, CH = H - 150, CUT = 48;
+    c.save();
+    c.shadowColor = "rgba(0,0,0,.5)"; c.shadowBlur = 30; c.shadowOffsetY = 16;
+    c.beginPath();
+    c.moveTo(CX, CY); c.lineTo(CX + CW - CUT, CY); c.lineTo(CX + CW, CY + CUT); c.lineTo(CX + CW, CY + CH); c.lineTo(CX, CY + CH); c.closePath();
+    var mg = c.createLinearGradient(0, CY, 0, CY + CH);
+    mg.addColorStop(0, "#EFDFB5"); mg.addColorStop(.5, "#E8D4A3"); mg.addColorStop(1, "#E1C990");
+    c.fillStyle = mg; c.fill();
+    c.restore();
+    c.save();
+    c.clip();
+    // paper fibres
+    var seed = 7;
+    function rnd(){ seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    for (var k = 0; k < 9000; k++){
+      c.fillStyle = "rgba(110,84,40," + (0.03 + rnd() * 0.07).toFixed(3) + ")";
+      c.fillRect(CX + rnd() * CW, CY + rnd() * CH, 1 + rnd() * 1.6, 1 + rnd() * 1.6);
     }
-    box(W - M - 190 - 210, "Days worked", fmtNum(totD), INK);
-    box(W - M - 190, "Extra hours", "+" + fmtNum(totX), RED);
-    c.textAlign = "left";
+    c.restore();
 
-    var ruleY = M + 132;
-    c.fillStyle = INK; c.fillRect(M, ruleY, W - 2 * M, 5);
+    var X0 = CX + 50, X1 = CX + CW - 50;
+
+    // header
+    c.fillStyle = INK; c.textAlign = "left"; c.textBaseline = "alphabetic";
+    font("700 24px " + SANS, "semi-condensed"); c.fillText("Time card", X0, CY + 78);
+    font("900 52px " + SANS, "condensed"); c.fillText(MONTHS[m] + " " + y, X0, CY + 136);
+    // month box (like the week number box)
+    var bw = 170, bx = X1 - bw, by = CY + 70, bh = 76;
+    c.lineWidth = 2.5; c.strokeStyle = INK; c.strokeRect(bx, by, bw, bh);
+    c.fillRect(bx + 66, by, 2.5, bh);
+    font("700 15px " + SANS, "condensed"); c.fillText("Month", bx + 10, by + 26); c.fillText("No.", bx + 10, by + 62);
+    font("900 56px " + STEN); c.textAlign = "center"; c.fillText(pad(m + 1), bx + 66 + (bw - 66) / 2, by + 62); c.textAlign = "left";
+    var ruleY = CY + 166;
+    c.fillRect(X0, ruleY, X1 - X0, 3.5);
 
     // columns
-    var xDate = M + 4, xDay = M + 120, xVenue = M + 210, xDays = W - M - 190, xExtra = W - M - 8;
-    var headY = ruleY + 44;
-    font("700 20px " + SANS, "condensed"); c.fillStyle = INK;
-    c.fillText("Date", xDate, headY); c.fillText("Day", xDay, headY); c.fillText("Venue", xVenue, headY);
-    c.textAlign = "right"; c.fillText("Days", xDays, headY);
-    c.fillStyle = RED; c.fillText("Extra hours", xExtra, headY);
-    c.textAlign = "left";
-    c.fillStyle = INK; c.fillRect(M, headY + 14, W - 2 * M, 2);
+    var xVen = X0 + 150, xDays = X1 - 370, xExtra = X1 - 170;
+    var headY = ruleY + 34;
+    font("700 16px " + SANS, "condensed");
+    c.fillText("Day", X0, headY); c.fillText("Venue", xVen + 16, headY); c.fillText("Days worked", xDays + 14, headY);
+    c.fillStyle = RED; c.fillText("Extra hours", xExtra + 16, headY); c.fillStyle = INK;
+    var top = headY + 12;
+    c.fillRect(X0, top, X1 - X0, 1.6);
 
-    var top = headY + 16, bottomLimit = H - M - 150;
-    var rowH = Math.min(44, Math.floor((bottomLimit - top) / rows.length));
+    var bottomLimit = CY + CH - 150;
+    var rowH = Math.min(46, Math.floor((bottomLimit - top) / rows.length));
     rows.forEach(function (r, n){
-      var y0 = top + n * rowH, base = y0 + rowH * 0.7;
-      if (r.i >= 5){ c.fillStyle = "rgba(168,38,20,.06)"; c.fillRect(M, y0, W - 2 * M, rowH); }
-      if (r.i === 0 && n > 0){ c.fillStyle = INK; c.fillRect(M, y0 - 1, W - 2 * M, 3); }
+      var y0 = top + n * rowH, mid = y0 + rowH / 2, base = mid + 9;
+      if (r.i >= 5){ c.fillStyle = "rgba(168,38,20,.06)"; c.fillRect(X0, y0, X1 - X0, rowH); }
+      // separators: thick between weeks
+      if (r.i === 0 && n > 0){ c.fillStyle = INK; c.fillRect(X0, y0 - 1.25, X1 - X0, 2.5); }
+      else if (n > 0){ c.fillStyle = RULE; c.fillRect(X0, y0, X1 - X0, 1); }
+      // day + date on one line
       c.fillStyle = INK;
-      font("800 27px " + STEN); c.fillText(dm(r.date), xDate, base);
-      font("700 21px " + SANS, "condensed"); c.fillText(DAY_SHORT[r.i], xDay, base);
+      font("700 15px " + SANS, "condensed"); c.fillText(DAY_SHORT[r.i], X0 + 2, base);
+      font("800 25px " + STEN); c.fillText(dm(r.date), X0 + 44, base);
+      // venue with highlighter
       if (r.v){
-        font("700 " + Math.round(25 * h.hs) + "px " + HAND);
-        var vt = fitText(c, r.v, xDays - 110 - xVenue);
+        font("700 " + Math.round(22 * h.hs) + "px " + HAND);
+        var vt = fitText(c, r.v, xDays - xVen - 40);
         var vw = c.measureText(vt).width;
-        c.fillStyle = "rgba(255,220,50,.62)";
-        c.fillRect(xVenue - 6, base - rowH * 0.42, vw + 12, rowH * 0.5);
-        c.fillStyle = INK;
-        c.fillText(vt, xVenue, base);
+        c.fillStyle = "rgba(255,218,48,.72)";
+        c.beginPath();
+        c.moveTo(xVen + 12, mid - 4); c.lineTo(xVen + 22 + vw + 8, mid - 6); c.lineTo(xVen + 22 + vw + 6, base + 6); c.lineTo(xVen + 14, base + 7); c.closePath(); c.fill();
+        c.fillStyle = INK; c.fillText(vt, xVen + 18, base);
+      }
+      // punch holes
+      for (var hh = 0; hh < MAX_DAYS; hh++){
+        var cx = xDays + 34 + hh * 40, R = 13;
+        var fill = Math.max(0, Math.min(1, r.d - hh));
+        if (fill === 1){
+          c.fillStyle = DESK; c.beginPath(); c.arc(cx, mid, R, 0, Math.PI * 2); c.fill();
+          c.strokeStyle = "rgba(255,250,232,.7)"; c.lineWidth = 1.2; c.beginPath(); c.arc(cx, mid, R, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+        } else {
+          c.strokeStyle = "rgba(29,27,24,.45)"; c.lineWidth = 1.3; c.beginPath(); c.arc(cx, mid, R - .6, 0, Math.PI * 2); c.stroke();
+          if (fill === 0.5){ c.fillStyle = DESK; c.beginPath(); c.moveTo(cx, mid - R); c.arc(cx, mid, R, -Math.PI / 2, Math.PI / 2, true); c.closePath(); c.fill(); }
+        }
       }
       c.textAlign = "right";
-      if (r.d){ font("800 27px " + STEN); c.fillStyle = INK; c.fillText(fmtNum(r.d), xDays, base); }
-      if (r.x){ font("800 27px " + STEN); c.fillStyle = RED; c.fillText("+" + fmtNum(r.x) + " h", xExtra, base); }
+      font("800 25px " + STEN); c.fillStyle = r.d ? INK : "rgba(29,27,24,.28)";
+      c.fillText(fmtNum(r.d), xExtra - 16, base);
+      c.fillStyle = r.x ? RED : "rgba(168,38,20,.32)";
+      font("800 25px " + STEN); c.fillText((r.x ? "+" : "") + fmtNum(r.x), xExtra + 110, base);
+      font("700 15px " + SANS); c.fillText("h", xExtra + 124, base);
       c.textAlign = "left";
-      c.fillStyle = "rgba(29,27,24,.28)"; c.fillRect(M, y0 + rowH - 1, W - 2 * M, 1);
     });
+    var endY = top + rows.length * rowH;
+    // column lines, full height
+    c.fillStyle = RULE;
+    [xVen, xDays, xExtra].forEach(function (x){ c.fillRect(x, top, 1, endY - top); });
 
     // month total
-    var endY = top + rows.length * rowH;
-    c.fillStyle = INK; c.fillRect(M, endY + 2, W - 2 * M, 4);
-    var tY = endY + 64;
-    font("800 32px " + SANS, "condensed"); c.fillText("Month total", M, tY);
-    c.textAlign = "right";
-    font("900 44px " + STEN); c.fillText(fmtNum(totD) + "", xDays - 64, tY);
-    font("700 22px " + SANS, "condensed"); c.fillText(daysWord(totD), xDays, tY);
-    font("900 44px " + STEN); c.fillStyle = RED; c.fillText("+" + fmtNum(totX) + " h", xExtra, tY);
-    c.textAlign = "left";
-
+    c.fillStyle = INK; c.fillRect(X0, endY, X1 - X0, 2.5);
+    var tY = endY + 58;
+    font("800 26px " + SANS, "condensed"); c.fillText("Month total", X0, tY);
+    font("900 40px " + STEN); c.fillText(fmtNum(totD), xDays + 14, tY);
+    var tw = c.measureText(fmtNum(totD)).width;
+    font("700 16px " + SANS, "condensed"); c.fillText(daysWord(totD), xDays + 22 + tw, tY);
+    c.fillStyle = RED; font("900 40px " + STEN); c.fillText("+" + fmtNum(totX), xExtra + 16, tY);
+    var xw = c.measureText("+" + fmtNum(totX)).width;
+    font("700 16px " + SANS); c.fillText("h", xExtra + 22 + xw, tY);
+    c.fillStyle = RULE; c.fillRect(X0, tY + 22, X1 - X0, 1);
     var now = new Date();
-    font("500 18px " + SANS); c.fillStyle = SOFT;
-    c.fillText("Exported " + dm(now) + now.getFullYear() + " from Work days", M, H - M + 30);
+    font("600 14px " + SANS, "semi-condensed"); c.fillStyle = SOFT;
+    c.fillText("Exported " + dm(now) + now.getFullYear() + " from Work days", X0, tY + 46);
+
+    // red month stamp
+    c.save();
+    var sx = CX + CW - 70, sy = CY + CH - 10, SR = 78;
+    c.translate(sx, sy); c.rotate(-13 * Math.PI / 180);
+    c.globalAlpha = .88; c.strokeStyle = RED; c.fillStyle = RED;
+    c.lineWidth = 5; c.beginPath(); c.arc(0, 0, SR, 0, Math.PI * 2); c.stroke();
+    c.lineWidth = 1.8; c.beginPath(); c.arc(0, 0, SR - 24, 0, Math.PI * 2); c.stroke();
+    var ring = MONTHS[m].toUpperCase() + " " + y + "  •  TIME CARD  •  DAYS WORKED  •  ";
+    font("800 12.5px " + SANS, "condensed"); c.textAlign = "center";
+    var step = (Math.PI * 2) / ring.length;
+    for (var q = 0; q < ring.length; q++){
+      c.save(); c.rotate(-Math.PI / 2 + q * step + step / 2); c.translate(0, -(SR - 15)); c.fillText(ring[q], 0, 4); c.restore();
+    }
+    font("900 40px " + STEN); c.fillText(fmtNum(totD), 0, 10);
+    font("800 12px " + SANS, "condensed"); c.fillText(daysWord(totD), 0, 26);
+    font("700 11px " + SANS, "condensed"); c.fillText("+" + fmtNum(totX) + " h extra", 0, 40);
+    c.restore();
     return cv;
   }
 
@@ -1067,7 +1127,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     loadFonts(['900 40px "Archivo"', '800 40px "Big Shoulders Stencil"', '700 24px ' + h.fam])
       .then(function (){ return canvasJpeg(drawMonth(y, m)); })
       .then(function (jpeg){
-        var blob = buildPdf(jpeg, 1240, 1754);
+        var blob = buildPdf(jpeg, Math.round(1240 * 4 / 3), Math.round(1754 * 4 / 3));
         return savePdf(blob, "Work days " + y + "-" + pad(m + 1) + ".pdf");
       })
       .then(function (){ exportMsg(MONTHS[m] + " " + y + " PDF is ready."); },
