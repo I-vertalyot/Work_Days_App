@@ -49,7 +49,7 @@ body{background:#1B1F22;font-family:var(--sans);color:var(--ink);-webkit-font-sm
 /* ---------- the desk ---------- */
 .desk{
   min-height:100vh;
-  padding:calc(64px + env(safe-area-inset-top)) 24px 130px;
+  padding:calc(18px + env(safe-area-inset-top)) 24px 130px;
   overflow-x:hidden;overflow-x:clip;
   display:flex;flex-direction:column;align-items:center;
   background:radial-gradient(ellipse 75% 55% at 50% 0%, #3B444A 0%, #262B2F 55%, #1B1F22 100%);
@@ -264,26 +264,32 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .status[data-tone="warn"]::before{background:#E0533B}
 @keyframes pulse{50%{opacity:.3}}
 .status:not([data-tone="warn"]){position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.more-row{margin-top:30px}
-.status[data-tone="warn"] + .more-row{margin-top:0}
+
 
 /* ---------- handwriting picker ---------- */
 .more-btn{
   appearance:none;display:grid;place-items:center;
-  width:48px;height:48px;margin-top:14px;padding:0;cursor:pointer;
+  width:44px;height:44px;padding:0;cursor:pointer;
   border-radius:50%;border:1.5px solid rgba(226,203,148,.32);background:transparent;
   transition:background-color .15s,border-color .15s;
 }
-.more-row{width:100%;max-width:1040px}
+
 .more-btn svg{width:22px;height:22px;fill:#E2CB94}
 .more-btn:hover{border-color:rgba(226,203,148,.7);background:rgba(226,203,148,.08)}
 .more-btn[aria-expanded="true"]{background:#E8D4A3;border-color:#E8D4A3}
 .more-btn[aria-expanded="true"] svg{fill:#1D1B18}
 .more-btn:focus-visible{outline:2px solid #F0E2BC;outline-offset:3px;border-radius:50%}
 .hand-pick[hidden]{display:none}
-.hand-pick{width:100%;max-width:1040px;border:0;margin:14px 0 0;padding:0;min-width:0}
-.hand-pick legend{padding:0;margin-bottom:10px;color:#E3D3AE;font:600 15px/1 var(--sans);font-stretch:85%}
-.chips{display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 160px)}
+.topbar{width:100%;max-width:1040px;display:flex;justify-content:flex-end;margin-bottom:14px}
+.menu{position:relative;z-index:30}
+.hand-pick{
+  position:absolute;right:0;top:calc(100% + 8px);width:min(440px, calc(100vw - 24px));
+  margin:0;padding:14px 14px 16px;min-width:0;
+  background:#262B2F;border:1.5px solid rgba(226,203,148,.28);border-radius:16px;
+  box-shadow:0 18px 40px rgba(0,0,0,.5);
+}
+.hand-pick legend{float:left;width:100%;padding:0;margin-bottom:12px;color:#E3D3AE;font:600 15px/1 var(--sans);font-stretch:85%}
+.chips{clear:both;display:flex;flex-wrap:wrap;gap:8px}
 .chip{position:relative}
 .chip input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
 .chip span{
@@ -308,7 +314,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
 /* ---------- phone ---------- */
 @media (max-width:720px){
-  .desk{padding:calc(22px + env(safe-area-inset-top)) 12px 48px}
+  .desk{padding:calc(10px + env(safe-area-inset-top)) 12px 48px}
+  .topbar{margin-bottom:8px}
   .tabs{padding-bottom:6px}
   .side-arrow{width:24px;height:72px;box-shadow:0 4px 10px rgba(0,0,0,.3);border-radius:0 14px 14px 0;border-left:0}
   .side-next{border-radius:14px 0 0 14px;border-left:1.5px solid rgba(226,203,148,.35);border-right:0}
@@ -359,8 +366,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .fine span:last-child{padding-right:0}
   .stamp{width:104px;height:104px;right:-4px;bottom:-78px}
   .status{margin-top:96px;font-size:14px}
-  .more-row{margin-top:26px}
-  .chips{max-width:none}
+
+
 }
 @media (max-width:360px){
 
@@ -377,6 +384,17 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 </head>
 <body>
 <main class="desk">
+  <div class="topbar">
+    <div class="menu">
+  <button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="handPick" aria-label="Handwriting options" title="Handwriting options">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>
+  </button>
+  <fieldset class="hand-pick" id="handPick" hidden>
+    <legend>Handwriting for venues</legend>
+    <div class="chips" id="handChips"></div>
+  </fieldset>
+    </div>
+  </div>
   <div class="card-wrap">
 
     <section class="card" id="card" aria-labelledby="cardTitle">
@@ -434,13 +452,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="#E2CB94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
   <p class="status" id="status" role="status" data-tone="busy">Opening your log…</p>
-  <div class="more-row"><button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="handPick" aria-label="Handwriting options" title="Handwriting options">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>
-  </button></div>
-  <fieldset class="hand-pick" id="handPick" hidden>
-    <legend>Handwriting for venues</legend>
-    <div class="chips" id="handChips"></div>
-  </fieldset>
+
   <datalist id="venues"></datalist>
 </main>
 
@@ -743,6 +755,10 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   }
   function buildHandPicker(){
     $("moreBtn").addEventListener("click", function (){ setMore($("handPick").hidden); });
+    document.addEventListener("click", function (e){
+      if ($("handPick").hidden) return;
+      if (!e.target.closest || !e.target.closest(".menu")) setMore(false);
+    });
     document.addEventListener("keydown", function (e){
       if (e.key === "Escape" && !$("handPick").hidden){ setMore(false); $("moreBtn").focus(); }
     });
