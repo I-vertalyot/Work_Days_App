@@ -137,15 +137,17 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 }
 .row.weekend{background:rgba(168,38,20,.05)}
 .row > div + div{border-left:1px solid var(--rule)}
+.row > .venue-cell{border-left:0}
+.row{background-image:linear-gradient(var(--rule),var(--rule));background-size:1px 100%;background-position:104px 0;background-repeat:no-repeat}
 
-.day{position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;padding:8px 0 12px 2px}
+.day{position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;padding:8px 0 12px 2px;align-self:last baseline}
 .dname{font-size:14px;font-weight:700;font-stretch:75%}
 .ddate{font-size:28px;letter-spacing:.01em}
 .today-ring{position:absolute;left:-12px;top:3px;width:92px;height:62px;pointer-events:none;display:none}
 .today-ring path{fill:none;stroke:var(--pen);stroke-width:2.2px;stroke-linecap:round;opacity:.9}
 .row.is-today .today-ring{display:block}
 
-.venue-cell{display:flex;align-items:flex-end;padding:0 18px 6px}
+.venue-cell{display:flex;align-items:last baseline;padding:0 18px;align-self:last baseline}
 .venue{
   width:100%;min-width:0;border:0;background:transparent;border-radius:0;
   padding:6px 0 2px;line-height:1.2 !important;
@@ -350,12 +352,13 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     border-bottom:3px solid var(--ink);
   }
   .row > div + div{border-left:0}
-  .day{grid-area:day;padding:0 0 3px 2px;gap:1px}
+  .row{background-image:none}
+  .day{grid-area:day;padding:0 0 3px 2px;gap:1px;align-self:last baseline}
   .dname{font-size:12px}
   .ddate{font-size:17px;letter-spacing:0}
   .today-ring{left:-8px;top:-3px;width:58px;height:42px}
   .suggest{left:0;max-width:100%}
-  .venue-cell{grid-area:venue;align-self:end;padding:0 0 1px;border-bottom:1px dashed rgba(29,27,24,.28)}
+  .venue-cell{grid-area:venue;align-self:last baseline;padding:0 0 1px;border-bottom:1px dashed rgba(29,27,24,.28)}
   .venue{font-size:calc(19px * var(--hs));padding:4px 0 0}
   .days-cell{grid-area:days;padding:2px 0 0;gap:0}
   .ring{width:28px;height:28px}
