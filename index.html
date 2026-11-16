@@ -2,9 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
 <title>Work days</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#1B1F22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Work days">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
@@ -40,7 +49,7 @@ body{background:#1B1F22;font-family:var(--sans);color:var(--ink);-webkit-font-sm
 /* ---------- the desk ---------- */
 .desk{
   min-height:100vh;
-  padding:64px 24px 190px;
+  padding:calc(64px + env(safe-area-inset-top)) 24px 190px;
   overflow-x:hidden;overflow-x:clip;
   display:flex;flex-direction:column;align-items:center;
   background:radial-gradient(ellipse 75% 55% at 50% 0%, #3B444A 0%, #262B2F 55%, #1B1F22 100%);
@@ -273,7 +282,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
 /* ---------- phone ---------- */
 @media (max-width:720px){
-  .desk{padding:22px 12px 48px}
+  .desk{padding:calc(22px + env(safe-area-inset-top)) 12px 48px}
   .tabs{padding-bottom:6px}
   .side-arrow{width:24px;height:72px;box-shadow:0 4px 10px rgba(0,0,0,.3);border-radius:0 14px 14px 0;border-left:0}
   .side-next{border-radius:14px 0 0 14px;border-left:1.5px solid rgba(226,203,148,.35);border-right:0}
@@ -1081,6 +1090,13 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     if (e.key === "ArrowLeft"){ go(-1); e.preventDefault(); }
     else if (e.key === "ArrowRight"){ go(1); e.preventDefault(); }
   });
+
+  /* ---------- installable app: work offline when opened from its own website ---------- */
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol) && window.top === window.self){
+    window.addEventListener("load", function (){
+      navigator.serviceWorker.register("sw.js").catch(function (){});
+    });
+  }
 
   /* ---------- start ---------- */
   buildRows();

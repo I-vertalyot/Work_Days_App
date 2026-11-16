@@ -18,6 +18,16 @@ Move between weeks with the arrows on the left and right side of the screen, by 
 
 It's a single file with no build step. Open `index.html` in a browser, or turn on GitHub Pages for this repository (Settings › Pages › Deploy from a branch › `main`, folder `/`).
 
+## Installing it as an app
+
+Once GitHub Pages is on, open https://i-vertalyot.github.io/Work_Days_App/ and:
+
+- **iPhone (Safari):** Share button › Add to Home Screen.
+- **Android (Chrome):** menu › Install app (or Add to Home screen).
+- **Computer (Chrome or Edge):** the install icon at the right end of the address bar.
+
+It then opens in its own window with the punched-holes icon, and keeps working offline.
+
 ## Where entries are saved
 
 - **Opened from GitHub or as a file:** entries are saved in that browser only (local storage). Another browser or device starts with an empty log, and clearing the browser's site data deletes it.
