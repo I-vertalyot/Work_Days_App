@@ -117,6 +117,16 @@ body{background:#1B1F22;font-family:var(--sans);color:var(--ink);-webkit-font-sm
 .card-head h1{margin:0;font-size:20px;line-height:1;font-weight:700;font-stretch:85%}
 .r-short{display:none}
 .range{overflow-wrap:anywhere;margin:10px 0 0;font-size:36px;line-height:1;font-weight:900;font-stretch:62%;letter-spacing:-.005em}
+.card-today{
+  appearance:none;align-self:center;margin:0 auto;
+  height:42px;padding:0 20px;border-radius:999px;cursor:pointer;
+  background:transparent;border:1.5px solid var(--red);color:var(--red);
+  font:700 17px/1 var(--sans);font-stretch:80%;
+  transition:background-color .15s;
+}
+.card-today:hover{background:rgba(168,38,20,.08)}
+.card-today:active{background:rgba(168,38,20,.16)}
+.card-today[hidden]{display:none}
 .weekbox{display:flex;align-items:stretch;border:2px solid var(--ink);flex:none}
 .wb-label{
   display:flex;flex-direction:column;justify-content:space-between;
@@ -292,8 +302,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .side-arrow:focus-visible{border-radius:8px}
   .tab-today{height:38px;font-size:15px}
   .card{padding:22px 20px 18px;clip-path:polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%)}
-  .card-head{gap:12px;padding-bottom:14px}
-  .card-head > div:first-child{min-width:0}
+  .card-head{gap:12px;padding-bottom:14px;flex-wrap:wrap}
+  .card-today{order:3;flex-basis:100%;margin:2px 0 0;height:40px;font-size:16px}
+  .card-head > div:first-child{min-width:0;flex:1 1 0}
   .card-head h1{font-size:16px}
   .range{margin-top:6px;font-size:22px;line-height:1.05}
   .wb-label{padding:5px 8px;font-size:11px}
@@ -350,9 +361,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 <body>
 <main class="desk">
   <div class="card-wrap">
-    <nav class="tabs" aria-label="Weeks">
-      <button type="button" class="tab tab-today" id="todayBtn" hidden>Back to this week</button>
-    </nav>
 
     <section class="card" id="card" aria-labelledby="cardTitle">
       <header class="card-head">
@@ -360,6 +368,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
           <h1 id="cardTitle">Time card</h1>
           <p class="range"><span class="r-long" id="rangeLong"></span><span class="r-short" id="rangeShort"></span></p>
         </div>
+        <button type="button" class="card-today" id="todayBtn" hidden>Back to this week</button>
         <div class="weekbox" aria-label="Week number">
           <div class="wb-label" aria-hidden="true"><span>Week</span><span>No.</span></div>
           <div class="wb-num stencil" id="weekNo"></div>
