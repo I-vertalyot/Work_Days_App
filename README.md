@@ -32,5 +32,8 @@ It then opens in its own window with the punched-holes icon, and keeps working o
 
 ## Where entries are saved
 
-- **Opened from GitHub or as a file:** entries are saved in that browser only (local storage). Another browser or device starts with an empty log, and clearing the browser's site data deletes it.
-- **Opened as a Claude artifact:** entries are saved to your Claude account and appear on every device.
+- **Installed app or website, signed in:** open the ⋯ menu › *Sync across your devices* and sign in with the same email and password on each device. Entries sync between all of them and also work offline. The first time you sign in on a device, anything already saved on it is added to your account.
+- **Not signed in:** entries are saved in that browser only.
+- **Opened as a Claude artifact:** entries are saved to your Claude account.
+
+Sync uses a free Firebase project; its web settings go in `FIREBASE_CONFIG` near the sync section of `index.html`.

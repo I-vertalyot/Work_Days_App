@@ -330,6 +330,23 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .export-msg{margin:8px 0 0;min-height:0;color:#E3D3AE;font:500 14px/1.35 var(--sans)}
 .export-msg:empty{display:none}
 .export-msg.warn{color:#F0A08F}
+.sync-form{display:flex;flex-direction:column;gap:8px}
+.sync-input{
+  min-height:44px;padding:0 12px;border-radius:10px;
+  background:#1B1F22;color:#EADBB8;border:1.5px solid rgba(226,203,148,.32);
+  font:500 16px var(--sans);
+}
+.sync-input::placeholder{color:rgba(234,219,184,.45)}
+.ghost-btn{
+  min-height:44px;padding:0 16px;border-radius:10px;cursor:pointer;
+  background:transparent;color:#EADBB8;border:1.5px solid rgba(226,203,148,.4);
+  font:700 16px var(--sans);font-stretch:85%;
+}
+.ghost-btn:hover{border-color:rgba(226,203,148,.8)}
+.link-btn{padding:0;border:0;background:none;color:#E8D4A3;text-decoration:underline;cursor:pointer;font:inherit}
+.sync-note{margin:10px 0 0;color:rgba(227,211,174,.75);font:500 14px/1.4 var(--sans)}
+.sync-who{margin:0 0 10px;color:#E3D3AE;font:500 15px/1.4 var(--sans);overflow-wrap:anywhere}
+.sync-who b{color:#F1E2BA}
 .topbar{width:100%;max-width:1040px;display:flex;justify-content:flex-end;margin-bottom:14px}
 .menu{position:relative;z-index:30}
 .hand-pick{
@@ -469,6 +486,27 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
         <button type="button" class="export-btn" id="exportBtn">Download PDF</button>
       </div>
       <p class="export-msg" id="exportMsg" role="status"></p>
+    </div>
+    <div class="export sync" id="syncBox" hidden>
+      <p class="export-title">Sync across your devices</p>
+      <div id="syncOut">
+        <form class="sync-form" id="syncForm" novalidate>
+          <label class="sr-only" for="syncEmail">Email</label>
+          <input class="sync-input" id="syncEmail" type="email" autocomplete="email" inputmode="email" placeholder="Email">
+          <label class="sr-only" for="syncPass">Password</label>
+          <input class="sync-input" id="syncPass" type="password" autocomplete="current-password" placeholder="Password, at least 6 characters">
+          <div class="export-row">
+            <button type="submit" class="export-btn" id="syncSignIn">Sign in</button>
+            <button type="button" class="ghost-btn" id="syncCreate">Create account</button>
+          </div>
+        </form>
+        <p class="sync-note">Use the same email and password on each device. <button type="button" class="link-btn" id="syncForgot">Forgot password?</button></p>
+      </div>
+      <div id="syncIn" hidden>
+        <p class="sync-who">Syncing as <b id="syncWho"></b></p>
+        <button type="button" class="ghost-btn" id="syncSignOut">Sign out</button>
+      </div>
+      <p class="export-msg" id="syncMsg" role="status"></p>
     </div>
   </fieldset>
     </div>
@@ -1185,6 +1223,140 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   }
   window.addEventListener("resize", alignVenues);
 
+
+  /* ---------- sync across devices (Firebase), used outside Claude ---------- */
+  // Paste the web app settings from your Firebase project here (they are not secret).
+  var FIREBASE_CONFIG = null;
+  var FB_VERSION = "10.12.2";
+  var fbAuth = null, fbStore = null, fbUser = null, fbStarted = false;
+  var inClaudeFrame = window.top !== window.self;
+
+  function loadScript(src){
+    return new Promise(function (res, rej){
+      var el = document.createElement("script");
+      el.src = src; el.async = true; el.onload = res; el.onerror = rej;
+      document.head.appendChild(el);
+    });
+  }
+  function syncMsg(text, warn){
+    var e = $("syncMsg"); e.textContent = text || ""; e.classList.toggle("warn", !!warn);
+  }
+  function paintSync(){
+    var box = $("syncBox");
+    box.hidden = !fbStarted;
+    if (!fbStarted) return;
+    $("syncOut").hidden = !!fbUser;
+    $("syncIn").hidden = !fbUser;
+    if (fbUser) $("syncWho").textContent = fbUser.email || "your account";
+  }
+  function authError(e){
+    var c = e && e.code || "";
+    if (/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)) return "Wrong email or password.";
+    if (/email-already-in-use/.test(c)) return "That email already has an account. Sign in instead.";
+    if (/weak-password/.test(c)) return "Use a password with at least 6 characters.";
+    if (/invalid-email|missing-email/.test(c)) return "Check the email address.";
+    if (/missing-password/.test(c)) return "Enter your password.";
+    if (/network-request-failed/.test(c)) return "No connection. Try again when you're online.";
+    if (/too-many-requests/.test(c)) return "Too many tries. Wait a moment and try again.";
+    if (/operation-not-allowed/.test(c)) return "Email sign-in isn't switched on in Firebase yet.";
+    return "Couldn't sign in. Try again.";
+  }
+
+  function attachFirebase(u){
+    if (unsub){ try { unsub(); } catch (e){} unsub = null; }
+    // entries kept only on this device are merged into the account once
+    if (mode === "local" || mode === "memory"){
+      Object.keys(weeks).forEach(function (k){
+        if (!parseKey(k)) return;
+        weeks[k].days.forEach(function (d, i){
+          if (d.v.trim()) dirty.set(k + "|" + i + "|v", ++ver);
+          if (d.d) dirty.set(k + "|" + i + "|d", ++ver);
+          if (d.x) dirty.set(k + "|" + i + "|x", ++ver);
+        });
+      });
+    }
+    col = fbStore.collection("users/" + u.uid + "/weeks");
+    mode = "account"; ready = false; unreachable = false; problem = null;
+    subscribe();
+    setStatus();
+  }
+  function detachFirebase(){
+    if (unsub){ try { unsub(); } catch (e){} unsub = null; }
+    col = null; ready = false;
+    mode = "local";
+    persistLocal();
+    dirty.clear();
+    setStatus();
+  }
+  function onAccountReady(){
+    // the account now holds everything; this device's separate copy is no longer needed
+    if (fbUser){ try { window.localStorage.removeItem(LS_KEY); } catch (e){} }
+  }
+
+  function startFirebase(){
+    if (!FIREBASE_CONFIG || inClaudeFrame) return;
+    var base = "https://www.gstatic.com/firebasejs/" + FB_VERSION + "/";
+    loadScript(base + "firebase-app-compat.js")
+      .then(function (){ return Promise.all([loadScript(base + "firebase-auth-compat.js"), loadScript(base + "firebase-firestore-compat.js")]); })
+      .then(function (){
+        var fb = window.firebase;
+        fb.initializeApp(FIREBASE_CONFIG);
+        fbAuth = fb.auth();
+        fbStore = fb.firestore();
+        try { fbStore.enablePersistence({ synchronizeTabs: true }).catch(function (){}); } catch (e){}
+        fbStarted = true;
+        paintSync();
+        fbAuth.onAuthStateChanged(function (u){
+          var was = fbUser;
+          fbUser = u;
+          paintSync();
+          if (u && (!was || was.uid !== u.uid)) attachFirebase(u);
+          else if (!u && was) detachFirebase();
+        });
+      })
+      .catch(function (){ fbStarted = false; paintSync(); });
+  }
+
+  function wireSync(){
+    function creds(){
+      return { email: $("syncEmail").value.trim(), pass: $("syncPass").value };
+    }
+    function busy(on){ ["syncSignIn", "syncCreate"].forEach(function (id){ $(id).disabled = on; }); }
+    $("syncForm").addEventListener("submit", function (e){
+      e.preventDefault();
+      if (!fbAuth) return;
+      var c = creds();
+      if (!c.email || !c.pass){ syncMsg("Enter your email and password.", true); return; }
+      busy(true); syncMsg("Signing in…");
+      fbAuth.signInWithEmailAndPassword(c.email, c.pass)
+        .then(function (){ syncMsg("Signed in. Your entries now sync."); $("syncPass").value = ""; },
+              function (err){ syncMsg(authError(err), true); })
+        .then(function (){ busy(false); });
+    });
+    $("syncCreate").addEventListener("click", function (){
+      if (!fbAuth) return;
+      var c = creds();
+      if (!c.email || !c.pass){ syncMsg("Enter an email and a password to create your account.", true); return; }
+      busy(true); syncMsg("Creating your account…");
+      fbAuth.createUserWithEmailAndPassword(c.email, c.pass)
+        .then(function (){ syncMsg("Account created. Sign in with it on your other devices."); $("syncPass").value = ""; },
+              function (err){ syncMsg(authError(err), true); })
+        .then(function (){ busy(false); });
+    });
+    $("syncForgot").addEventListener("click", function (){
+      if (!fbAuth) return;
+      var email = $("syncEmail").value.trim();
+      if (!email){ syncMsg("Type your email above first.", true); return; }
+      fbAuth.sendPasswordResetEmail(email)
+        .then(function (){ syncMsg("Check your email for a link to set a new password."); },
+              function (err){ syncMsg(authError(err), true); });
+    });
+    $("syncSignOut").addEventListener("click", function (){
+      if (!fbAuth) return;
+      fbAuth.signOut().then(function (){ syncMsg("Signed out. Entries stay on this device."); });
+    });
+  }
+
   /* ---------- painting ---------- */
   function renderWeek(animate){
     var sunday = addDays(monday, 6);
@@ -1482,6 +1654,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   }
 
   function connect(){
+    if (window.top === window.self){ startLocal(); startFirebase(); return; }
     waitForClaude(2000).then(function (c){
       if (!c) return startLocal();
       return Promise.all([
@@ -1517,6 +1690,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
         clearTimeout(timer);
         dirtyKeys().forEach(function (k){ save(k); });
         if (handTouched) saveHand();
+        if (typeof onAccountReady === "function") setTimeout(onAccountReady, 0);
       }
       refreshValues();
       updateVenueList();
@@ -1622,6 +1796,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   buildHandPicker();
   alignVenues();
   $("exportBtn").addEventListener("click", exportMonth);
+  wireSync();
   renderWeek(false);
   setInterval(tick, 30000);
   setStatus();
