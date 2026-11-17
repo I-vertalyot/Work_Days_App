@@ -1789,7 +1789,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   function go(deltaWeeks, arrow){
     monday = addDays(monday, 7 * deltaWeeks);
     renderWeek(deltaWeeks > 0 ? 1 : -1);
-    showSwipeHint(arrow || (deltaWeeks > 0 ? "left" : "right"));
+    showSwipeHint(arrow || (deltaWeeks > 0 ? "right" : "left"));
   }
 
   /* short arrow badge showing which way the week was turned */
