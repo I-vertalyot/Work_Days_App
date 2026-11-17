@@ -401,7 +401,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     background-position:122px 0,calc(100% - 346px) 0,calc(100% - 182px) 0;
   }
   .row > div + div{border-left:0}
-  .row > .day,.row > .venue-cell{align-self:center}
+  .row > .day{align-self:center}
+  .row > .venue-cell{align-self:stretch;cursor:text}
   .day{flex-direction:row;align-items:baseline;justify-content:flex-start;gap:9px;padding:0 0 0 2px}
   .dname{font-size:15px;min-width:30px}
   .ddate,.dval{line-height:1}
@@ -440,9 +441,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .ddate{font-size:17px;letter-spacing:0}
   .today-ring{left:-8px;top:-3px;width:58px;height:42px}
   .suggest{left:0;max-width:100%}
-  .venue-cell{grid-area:venue;align-self:last baseline;padding:0 0 1px;border-bottom:1px dashed rgba(29,27,24,.28)}
-  .venue{font-size:calc(19px * var(--hs));padding:4px 0 0}
-  .hl{font-size:calc(19px * var(--hs));padding:4px 5px 0}
+  .venue-cell{grid-area:venue;align-self:last baseline;padding:0 0 1px;border-bottom:1px dashed rgba(29,27,24,.28);cursor:text}
+  .venue{font-size:calc(19px * var(--hs));padding:16px 0 0 !important;margin-top:-10px}
+  .hl{font-size:calc(19px * var(--hs));padding:16px 5px 0;margin-top:-10px}
   .days-cell{grid-area:days;padding:2px 0 0;gap:0}
   .ring{width:28px;height:28px}
   .ring[data-fill="0.5"] .punch{width:15.5px;height:30px}
@@ -721,6 +722,13 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       var hl = el("span", "hl", { "aria-hidden": "true" });
       vwrap.appendChild(hl); vwrap.appendChild(venue);
       vcell.appendChild(vwrap);
+      vcell.addEventListener("mousedown", function (e){
+        if (e.target === venue || mode === "readonly") return;
+        e.preventDefault();
+        venue.focus();
+        var n = venue.value.length;
+        try { venue.setSelectionRange(n, n); } catch (err){}
+      });
 
       var dcell = el("div", "days-cell");
       var holes = [];
