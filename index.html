@@ -149,17 +149,15 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
 .venue-cell{display:flex;align-items:last baseline;padding:0 18px;align-self:last baseline}
 .venue{
-  width:100%;min-width:0;background:transparent;
-  border:1px solid rgba(29,27,24,.32);border-radius:6px;
-  padding:6px 10px 2px;line-height:1.2 !important;
-  transition:border-color .15s;
+  width:100%;min-width:0;border:0;background:transparent;border-radius:0;
+  padding:6px 0 2px;line-height:1.2 !important;
   font:700 calc(22px * var(--hs))/1.35 var(--hand);color:var(--ink);
 }
 .venue-cell{position:relative}
 .vwrap{position:relative;flex:1 1 auto;min-width:0;display:flex;align-items:last baseline}
 .vwrap .venue{position:relative;z-index:1}
 .hl{
-  position:absolute;left:6px;top:1px;z-index:0;max-width:calc(100% - 12px);
+  position:absolute;left:-5px;top:0;z-index:0;max-width:calc(100% + 10px);
   padding:6px 5px 2px;box-sizing:border-box;overflow:hidden;white-space:pre;pointer-events:none;
   font:700 calc(22px * var(--hs))/1.2 var(--hand);color:transparent;
   background:linear-gradient(100deg, rgba(255,224,60,0) 0, rgba(255,224,60,.78) 5px, rgba(255,216,40,.72) calc(100% - 5px), rgba(255,224,60,0) 100%) 0 78%/100% 58% no-repeat;
@@ -387,9 +385,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 :focus-visible{outline:2px solid var(--pen);outline-offset:3px;border-radius:4px}
 .tab:focus-visible{outline-color:#F0E2BC;outline-offset:2px;border-radius:999px}
 .venue:focus-visible,.xh:focus-visible{outline-offset:2px}
-.venue:hover{border-color:rgba(29,27,24,.5)}
-.venue:focus{border-color:var(--ink)}
-.venue:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(35,64,154,.35)}
 
 @media (prefers-reduced-motion:reduce){
   .card.swap,.card.swap-next,.card.swap-prev{animation:none}
@@ -412,7 +407,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .ddate,.dval{line-height:1}
   .venue-cell{align-items:center}
   .vwrap{align-items:center;transform:translateY(var(--vshift, 0px))}
-  .venue{padding:6px 10px !important}
+  .venue{padding:6px 0 !important}
   .hl{padding:6px 5px !important}
   .xh{line-height:1;padding:3.5px 2px 2px}
   .today-ring{top:50%;left:30px;transform:translateY(-50%);width:84px;height:54px}
@@ -445,9 +440,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .ddate{font-size:17px;letter-spacing:0}
   .today-ring{left:-8px;top:-3px;width:58px;height:42px}
   .suggest{left:0;max-width:100%}
-  .venue-cell{grid-area:venue;align-self:last baseline;padding:0 0 2px}
-  .venue{font-size:calc(19px * var(--hs));padding:4px 9px 2px}
-  .hl{font-size:calc(19px * var(--hs));padding:4px 5px 2px;left:5px;max-width:calc(100% - 10px)}
+  .venue-cell{grid-area:venue;align-self:last baseline;padding:0 0 1px;border-bottom:1px dashed rgba(29,27,24,.28)}
+  .venue{font-size:calc(19px * var(--hs));padding:4px 0 0}
+  .hl{font-size:calc(19px * var(--hs));padding:4px 5px 0}
   .days-cell{grid-area:days;padding:2px 0 0;gap:0}
   .ring{width:28px;height:28px}
   .ring[data-fill="0.5"] .punch{width:15.5px;height:30px}
