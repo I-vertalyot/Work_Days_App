@@ -276,6 +276,18 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .status:not([data-tone="warn"]){position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 
+/* ---------- small message at the bottom ---------- */
+.toast{
+  position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));z-index:60;
+  transform:translate(-50%,12px);opacity:0;pointer-events:none;
+  padding:11px 18px;border-radius:999px;
+  background:rgba(27,31,34,.95);color:#F1E2BA;box-shadow:0 8px 24px rgba(0,0,0,.4);
+  font:600 15px/1.2 var(--sans);white-space:nowrap;
+  transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
 /* ---------- swipe hint: three chevrons rippling in the swipe direction ---------- */
 .swipe-hint{
   position:fixed;left:50%;top:50%;z-index:40;pointer-events:none;
@@ -468,6 +480,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 </style>
 </head>
 <body>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <main class="desk">
   <div class="swipe-hint" id="swipeHint" aria-hidden="true"><svg class="sh-c" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#1D1B18" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="sh-c" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#1D1B18" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="sh-c" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#1D1B18" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
   <div class="topbar">
@@ -1436,10 +1449,26 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   var backOpen = false, ignorePop = 0;
   function isField(el){ return !!el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA"); }
   function somethingOpen(){ return !$("handPick").hidden || isField(document.activeElement) || !sugEl.hidden; }
+  // An extra history entry at the bottom, so a single Back press doesn't leave the app.
+  var guardOn = false, exitTimer = 0;
+  function ensureGuard(){
+    if (guardOn || window.top !== window.self) return;
+    clearTimeout(exitTimer);
+    try { history.pushState({ wdGuard: 1 }, ""); guardOn = true; } catch (e){}
+  }
+  var toastTimer = 0;
+  function showToast(text){
+    var t = $("toast");
+    t.textContent = text;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function (){ t.classList.remove("show"); }, 1900);
+  }
   function syncBack(){
     if (window.top !== window.self) return;   // inside Claude the host owns history
     var open = somethingOpen();
     if (open && !backOpen){
+      ensureGuard();
       backOpen = true;
       try { history.pushState({ wdBack: 1 }, ""); } catch (e){ backOpen = false; }
     } else if (!open && backOpen){
@@ -1450,13 +1479,22 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   }
   window.addEventListener("popstate", function (){
     if (ignorePop > 0){ ignorePop--; return; }
-    if (!backOpen) return;
+    if (!backOpen){
+      // Back with nothing open: warn first; a second Back within 2 s leaves the app.
+      if (!guardOn) return;
+      guardOn = false;
+      showToast("Press Back again to exit");
+      clearTimeout(exitTimer);
+      exitTimer = setTimeout(ensureGuard, 2000);
+      return;
+    }
     backOpen = false;
     hideSuggest();
     if (!$("handPick").hidden) setMore(false);
     if (isField(document.activeElement)) document.activeElement.blur();
   });
   document.addEventListener("focusin", function (){ setTimeout(syncBack, 0); });
+  if (window.top === window.self) window.addEventListener("load", function (){ setTimeout(ensureGuard, 0); });
   document.addEventListener("focusout", function (){ setTimeout(syncBack, 0); });
 
   /* ---------- painting ---------- */
