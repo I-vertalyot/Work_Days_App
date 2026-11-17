@@ -890,6 +890,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     if (open){ fillExportMonths(); exportMsg(""); }
     $("handPick").hidden = !open;
     $("moreBtn").setAttribute("aria-expanded", open ? "true" : "false");
+    setTimeout(syncBack, 0);
   }
   function buildHandPicker(){
     $("moreBtn").addEventListener("click", function (){ setMore($("handPick").hidden); });
@@ -1430,6 +1431,34 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       endSession("Signed out. Entries stay on this device.");
     });
   }
+
+  /* ---------- phone Back button closes what is open (like Esc) ---------- */
+  var backOpen = false, ignorePop = 0;
+  function isField(el){ return !!el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA"); }
+  function somethingOpen(){ return !$("handPick").hidden || isField(document.activeElement) || !sugEl.hidden; }
+  function syncBack(){
+    if (window.top !== window.self) return;   // inside Claude the host owns history
+    var open = somethingOpen();
+    if (open && !backOpen){
+      backOpen = true;
+      try { history.pushState({ wdBack: 1 }, ""); } catch (e){ backOpen = false; }
+    } else if (!open && backOpen){
+      backOpen = false;
+      ignorePop++;
+      try { history.back(); } catch (e){ ignorePop--; }
+    }
+  }
+  window.addEventListener("popstate", function (){
+    if (ignorePop > 0){ ignorePop--; return; }
+    if (!backOpen) return;
+    backOpen = false;
+    hideSuggest();
+    if (!$("handPick").hidden) setMore(false);
+    if (isField(document.activeElement)) document.activeElement.blur();
+  });
+  document.addEventListener("focusin", function (){ setTimeout(syncBack, 0); });
+  document.addEventListener("focusout", function (){ setTimeout(syncBack, 0); });
+
   /* ---------- painting ---------- */
   function renderWeek(animate){
     var sunday = addDays(monday, 6);
