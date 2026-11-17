@@ -1,5 +1,5 @@
 // Keeps Work days working offline once it has been opened.
-const CACHE = "workdays-v26";
+const CACHE = "workdays-v27";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon-32.png"];
 
 self.addEventListener("install", (e) => {
