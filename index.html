@@ -413,6 +413,11 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   .xh{line-height:1;padding:3.5px 2px 2px}
   .today-ring{top:50%;left:30px;transform:translateY(-50%);width:84px;height:54px}
 }
+
+/* touch screens: boxes don't catch the finger until tapped, so scrolling works everywhere */
+@media (pointer:coarse){
+  .venue:not(:focus),.xh:not(:focus){pointer-events:none}
+}
 /* ---------- phone ---------- */
 @media (max-width:720px){
   .desk{padding:calc(10px + env(safe-area-inset-top)) 12px 48px}
@@ -722,6 +727,22 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       var hl = el("span", "hl", { "aria-hidden": "true" });
       vwrap.appendChild(hl); vwrap.appendChild(venue);
       vcell.appendChild(vwrap);
+      // a short tap (not a scroll) on the venue area opens the box for typing
+      var tx = 0, ty = 0, tmoved = false;
+      vcell.addEventListener("touchstart", function (e){
+        var t = e.touches[0]; tx = t.clientX; ty = t.clientY; tmoved = false;
+      }, { passive: true });
+      vcell.addEventListener("touchmove", function (e){
+        var t = e.touches[0];
+        if (Math.abs(t.clientX - tx) > 10 || Math.abs(t.clientY - ty) > 10) tmoved = true;
+      }, { passive: true });
+      vcell.addEventListener("touchend", function (e){
+        if (tmoved || mode === "readonly" || document.activeElement === venue) return;
+        e.preventDefault();
+        venue.focus();
+        var n = venue.value.length;
+        try { venue.setSelectionRange(n, n); } catch (err){}
+      });
       vcell.addEventListener("mousedown", function (e){
         if (e.target === venue || mode === "readonly") return;
         e.preventDefault();
@@ -854,6 +875,21 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
         xcell.classList.remove("bad");
         setField(i, "x", p);
         paintHours(r, p);
+      });
+      // a short tap (not a scroll) on the hours box opens it for typing
+      var hx = 0, hy = 0, hmoved = false;
+      extra.addEventListener("touchstart", function (e){
+        var t = e.touches[0]; hx = t.clientX; hy = t.clientY; hmoved = false;
+      }, { passive: true });
+      extra.addEventListener("touchmove", function (e){
+        var t = e.touches[0];
+        if (Math.abs(t.clientX - hx) > 10 || Math.abs(t.clientY - hy) > 10) hmoved = true;
+      }, { passive: true });
+      extra.addEventListener("touchend", function (e){
+        if (hmoved || mode === "readonly" || document.activeElement === xh) return;
+        e.preventDefault();
+        xh.focus();
+        try { xh.select(); } catch (err){}
       });
       xh.addEventListener("blur", function (){
         xh.value = fmtHours(currentWeek().days[i].x);
