@@ -359,7 +359,33 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .sync-note{margin:10px 0 0;color:rgba(227,211,174,.75);font:500 14px/1.4 var(--sans)}
 .sync-who{margin:0 0 10px;color:#E3D3AE;font:500 15px/1.4 var(--sans);overflow-wrap:anywhere}
 .sync-who b{color:#F1E2BA}
-.topbar{width:100%;max-width:1040px;display:flex;justify-content:flex-end;margin-bottom:14px}
+.topbar{width:100%;max-width:1040px;display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:14px}
+
+/* ---------- lock switch ---------- */
+.lock-switch{appearance:none;display:grid;place-items:center;width:64px;height:44px;padding:0;border:0;background:transparent;cursor:pointer}
+.lk-track{
+  position:relative;display:block;width:52px;height:30px;border-radius:999px;
+  background:rgba(226,203,148,.14);border:1.5px solid rgba(226,203,148,.4);
+  transition:background-color .2s,border-color .2s;
+}
+.lk-knob{
+  position:absolute;top:2px;left:2px;width:23px;height:23px;border-radius:50%;
+  display:grid;place-items:center;background:#E8D4A3;
+  box-shadow:0 1px 3px rgba(0,0,0,.4);
+  transition:transform .2s ease;
+}
+.lk-knob svg{width:14px;height:14px;grid-area:1/1}
+.lk-closed{display:none}
+.lock-switch[aria-checked="true"] .lk-track{background:#A82614;border-color:#A82614}
+.lock-switch[aria-checked="true"] .lk-knob{transform:translateX(22px);background:#F6E7C6}
+.lock-switch[aria-checked="true"] .lk-open{display:none}
+.lock-switch[aria-checked="true"] .lk-closed{display:block}
+.lock-switch:hover .lk-track{border-color:rgba(226,203,148,.75)}
+.lock-switch:focus-visible{outline:2px solid #F0E2BC;outline-offset:2px;border-radius:999px}
+@media (prefers-reduced-motion:reduce){.lk-knob,.lk-track{transition:none}}
+/* locked card: nothing to press */
+.locked .xbtn{visibility:hidden}
+.locked .hole,.locked .venue-cell,.locked .extra,.locked .dval{cursor:default}
 .menu{position:relative;z-index:30}
 .hand-pick{
   position:absolute;right:0;top:calc(100% + 8px);width:min(440px, calc(100vw - 24px));
@@ -490,6 +516,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 <main class="desk">
   <div class="swipe-hint" id="swipeHint" aria-hidden="true"><svg class="sh-c" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#1D1B18" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="sh-c" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#1D1B18" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="sh-c" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#1D1B18" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
   <div class="topbar">
+    <button type="button" class="lock-switch" id="lockBtn" role="switch" aria-checked="false" aria-label="Lock changes" title="Lock changes">
+      <span class="lk-track"><span class="lk-knob"><svg class="lk-open" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="7" rx="1.6" fill="#1D1B18"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 4.9-.6" fill="none" stroke="#1D1B18" stroke-width="1.8" stroke-linecap="round"/></svg><svg class="lk-closed" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="7" rx="1.6" fill="#1D1B18"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7" fill="none" stroke="#1D1B18" stroke-width="1.8" stroke-linecap="round"/></svg></span></span>
+    </button>
     <div class="menu">
   <button type="button" class="more-btn" id="moreBtn" aria-expanded="false" aria-controls="handPick" aria-label="Menu" title="Menu">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>
@@ -737,14 +766,14 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
         if (Math.abs(t.clientX - tx) > 10 || Math.abs(t.clientY - ty) > 10) tmoved = true;
       }, { passive: true });
       vcell.addEventListener("touchend", function (e){
-        if (tmoved || mode === "readonly" || document.activeElement === venue) return;
+        if (tmoved || mode === "readonly" || locked || document.activeElement === venue) return;
         e.preventDefault();
         venue.focus();
         var n = venue.value.length;
         try { venue.setSelectionRange(n, n); } catch (err){}
       });
       vcell.addEventListener("mousedown", function (e){
-        if (e.target === venue || mode === "readonly") return;
+        if (e.target === venue || mode === "readonly" || locked) return;
         e.preventDefault();
         venue.focus();
         var n = venue.value.length;
@@ -786,7 +815,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
       venue.addEventListener("input", function (){
         hl.textContent = venue.value.trim() ? venue.value : "";
-        if (mode === "readonly") return;
+        if (mode === "readonly" || locked) return;
         var w = getWeek(keyOf(monday), true);
         var had = w.days[i].v.trim() !== "";
         setField(i, "v", venue.value.slice(0, MAX_VENUE));
@@ -822,7 +851,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       });
 
       function setDays(next){
-        if (mode === "readonly") return;
+        if (mode === "readonly" || locked) return;
         next = clampDays(next);
         if (next === currentWeek().days[i].d) return;
         setField(i, "d", next);
@@ -851,7 +880,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       }, { passive: false });
 
       function stepHours(dir){
-        if (mode === "readonly") return;
+        if (mode === "readonly" || locked) return;
         var x = currentWeek().days[i].x;
         var next = clampHours(x + dir);
         xh.removeAttribute("aria-invalid");
@@ -868,7 +897,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       });
 
       xh.addEventListener("input", function (){
-        if (mode === "readonly") return;
+        if (mode === "readonly" || locked) return;
         var p = parseHours(xh.value);
         if (p === null){ xh.setAttribute("aria-invalid", "true"); xcell.classList.add("bad"); return; }
         xh.removeAttribute("aria-invalid");
@@ -886,7 +915,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
         if (Math.abs(t.clientX - hx) > 10 || Math.abs(t.clientY - hy) > 10) hmoved = true;
       }, { passive: true });
       extra.addEventListener("touchend", function (e){
-        if (hmoved || mode === "readonly" || document.activeElement === xh) return;
+        if (hmoved || mode === "readonly" || locked || document.activeElement === xh) return;
         e.preventDefault();
         xh.focus();
         try { xh.select(); } catch (err){}
@@ -1541,6 +1570,30 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   if (window.top === window.self) window.addEventListener("load", function (){ setTimeout(ensureGuard, 0); });
   document.addEventListener("focusout", function (){ setTimeout(syncBack, 0); });
 
+
+  /* ---------- lock changes ---------- */
+  var LOCK_KEY = "workdays.locked";
+  var locked = false;
+  function applyLock(){
+    $("lockBtn").setAttribute("aria-checked", locked ? "true" : "false");
+    $("lockBtn").setAttribute("title", locked ? "Unlock changes" : "Lock changes");
+    $("lockBtn").setAttribute("aria-label", locked ? "Unlock changes" : "Lock changes");
+    document.body.classList.toggle("locked", locked);
+    $("rowsField").disabled = locked || mode === "readonly";
+    rows.forEach(function (r){ r.val.setAttribute("aria-readonly", locked || mode === "readonly" ? "true" : "false"); });
+    if (locked){
+      if (typeof hideSuggest === "function") hideSuggest();
+      var a = document.activeElement;
+      if (a && (a.classList.contains("venue") || a.classList.contains("xh"))) a.blur();
+    }
+  }
+  function toggleLock(){
+    locked = !locked;
+    try { window.localStorage.setItem(LOCK_KEY, locked ? "1" : "0"); } catch (e){}
+    applyLock();
+    if (typeof showToast === "function") showToast(locked ? "Changes locked" : "Changes unlocked");
+  }
+
   /* ---------- painting ---------- */
   function renderWeek(animate){
     var sunday = addDays(monday, 6);
@@ -1714,6 +1767,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
   /* ---------- editing + saving ---------- */
   function setField(i, f, val){
+    if (locked) return;
     var k = keyOf(monday);
     var w = getWeek(k, true);
     if (w.days[i][f] === val) return;
@@ -1727,7 +1781,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   }
 
   function scheduleSave(k){
-    if (mode === "readonly") return;
+    if (mode === "readonly" || locked) return;
     if (timers[k]) clearTimeout(timers[k]);
     timers[k] = setTimeout(function (){ delete timers[k]; save(k); setStatus(); }, mode === "account" ? 700 : 250);
     setStatus();
@@ -1981,6 +2035,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   /* ---------- start ---------- */
   buildRows();
   buildHandPicker();
+  try { locked = window.localStorage.getItem(LOCK_KEY) === "1"; } catch (e){}
+  $("lockBtn").addEventListener("click", toggleLock);
+  applyLock();
   alignVenues();
   $("exportBtn").addEventListener("click", exportMonth);
   wireSync();
