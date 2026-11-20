@@ -1095,7 +1095,11 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
     var rows = monthRows(y, m);
     var totD = 0, totX = 0;
+    var DAY_PRICE = 5000, HOUR_PRICE = 400;
+    function priceOf(r){ return r.d * DAY_PRICE + r.x * HOUR_PRICE; }
+    function money(n){ return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "\u2009"); }
     rows.forEach(function (r){ totD += r.d; totX += r.x; });
+    var totP = totD * DAY_PRICE + totX * HOUR_PRICE;
 
     // desk
     var g = c.createRadialGradient(W / 2, 0, 40, W / 2, 0, H);
@@ -1139,11 +1143,12 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     c.fillRect(X0, ruleY, X1 - X0, 3.5);
 
     // columns
-    var xVen = X0 + 150, xDays = X1 - 370, xExtra = X1 - 170;
+    var xVen = X0 + 150, xDays = X1 - 500, xExtra = X1 - 300, xPrice = X1 - 140;
     var headY = ruleY + 34;
     font("700 16px " + SANS, "condensed");
     c.fillText("Day", X0, headY); c.fillText("Venue", xVen + 16, headY); c.fillText("Days worked", xDays + 14, headY);
     c.fillStyle = RED; c.fillText("Extra hours", xExtra + 16, headY); c.fillStyle = INK;
+    c.textAlign = "right"; c.fillText("Price", X1 - 4, headY); c.textAlign = "left";
     var top = headY + 12;
     c.fillRect(X0, top, X1 - X0, 1.6);
 
@@ -1187,12 +1192,19 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       c.fillStyle = r.x ? RED : "rgba(168,38,20,.32)";
       font("800 25px " + STEN); c.fillText((r.x ? "+" : "") + fmtNum(r.x), xExtra + 110, base);
       font("700 15px " + SANS); c.fillText("h", xExtra + 124, base);
+      var pr = priceOf(r);
+      if (pr){
+        c.fillStyle = INK;
+        font("700 15px " + SANS, "condensed"); c.fillText("Kč", X1 - 4, base);
+        var kw = c.measureText("Kč").width;
+        font("800 25px " + STEN); c.fillText(money(pr), X1 - 10 - kw, base);
+      }
       c.textAlign = "left";
     });
     var endY = top + rows.length * rowH;
     // column lines, full height
     c.fillStyle = RULE;
-    [xVen, xDays, xExtra].forEach(function (x){ c.fillRect(x, top, 1, endY - top); });
+    [xVen, xDays, xExtra, xPrice].forEach(function (x){ c.fillRect(x, top, 1, endY - top); });
 
     // month total
     c.fillStyle = INK; c.fillRect(X0, endY, X1 - X0, 2.5);
@@ -1204,6 +1216,11 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     c.fillStyle = RED; font("900 40px " + STEN); c.fillText("+" + fmtNum(totX), xExtra + 16, tY);
     var xw = c.measureText("+" + fmtNum(totX)).width;
     font("700 16px " + SANS); c.fillText("h", xExtra + 22 + xw, tY);
+    c.fillStyle = INK; c.textAlign = "right";
+    font("700 16px " + SANS, "condensed"); c.fillText("Kč", X1 - 4, tY);
+    var kw2 = c.measureText("Kč").width;
+    font("900 34px " + STEN); c.fillText(money(totP), X1 - 10 - kw2, tY);
+    c.textAlign = "left";
     c.fillStyle = RULE; c.fillRect(X0, tY + 22, X1 - X0, 1);
     var now = new Date();
     font("600 14px " + SANS, "semi-condensed"); c.fillStyle = SOFT;
