@@ -1081,6 +1081,11 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
   }
 
   function drawMonth(y, m){
+    // the exported PDF is in Czech
+    var MONTHS_CS = ["Leden","Únor","Březen","Duben","Květen","Červen","Červenec","Srpen","Září","Říjen","Listopad","Prosinec"];
+    var DAYS_CS = ["Po","Út","St","Čt","Pá","So","Ne"];
+    function num(n){ return fmtNum(n).replace(".", ","); }
+    function daysCs(n){ return n === 1 ? "den" : n % 1 ? "dne" : (n >= 2 && n <= 4) ? "dny" : "dní"; }
     var S = 4 / 3, W = 1240, H = 1754;
     var cv = document.createElement("canvas");
     cv.width = Math.round(W * S); cv.height = Math.round(H * S);
@@ -1131,13 +1136,13 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
     // header
     c.fillStyle = INK; c.textAlign = "left"; c.textBaseline = "alphabetic";
-    font("700 24px " + SANS, "semi-condensed"); c.fillText("Time card", X0, CY + 78);
-    font("900 52px " + SANS, "condensed"); c.fillText(MONTHS[m] + " " + y, X0, CY + 136);
+    font("700 24px " + SANS, "semi-condensed"); c.fillText("Výkaz práce", X0, CY + 78);
+    font("900 52px " + SANS, "condensed"); c.fillText(MONTHS_CS[m] + " " + y, X0, CY + 136);
     // month box (like the week number box)
     var bw = 170, bx = X1 - bw, by = CY + 70, bh = 76;
     c.lineWidth = 2.5; c.strokeStyle = INK; c.strokeRect(bx, by, bw, bh);
     c.fillRect(bx + 66, by, 2.5, bh);
-    font("700 15px " + SANS, "condensed"); c.fillText("Month", bx + 10, by + 26); c.fillText("No.", bx + 10, by + 62);
+    font("700 15px " + SANS, "condensed"); c.fillText("Měsíc", bx + 10, by + 26); c.fillText("č.", bx + 10, by + 62);
     font("900 56px " + STEN); c.textAlign = "center"; c.fillText(pad(m + 1), bx + 66 + (bw - 66) / 2, by + 62); c.textAlign = "left";
     var ruleY = CY + 166;
     c.fillRect(X0, ruleY, X1 - X0, 3.5);
@@ -1146,9 +1151,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     var xVen = X0 + 150, xDays = X1 - 500, xExtra = X1 - 300, xPrice = X1 - 140;
     var headY = ruleY + 34;
     font("700 16px " + SANS, "condensed");
-    c.fillText("Day", X0, headY); c.fillText("Venue", xVen + 16, headY); c.fillText("Days worked", xDays + 14, headY);
-    c.fillStyle = RED; c.fillText("Extra hours", xExtra + 16, headY); c.fillStyle = INK;
-    c.textAlign = "right"; c.fillText("Price", X1 - 4, headY); c.textAlign = "left";
+    c.fillText("Den", X0, headY); c.fillText("Místo", xVen + 16, headY); c.fillText("Odpracované dny", xDays + 14, headY);
+    c.fillStyle = RED; c.fillText("Přesčasy", xExtra + 16, headY); c.fillStyle = INK;
+    c.textAlign = "right"; c.fillText("Cena", X1 - 4, headY); c.textAlign = "left";
     var top = headY + 12;
     c.fillRect(X0, top, X1 - X0, 1.6);
 
@@ -1162,7 +1167,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       else if (n > 0){ c.fillStyle = RULE; c.fillRect(X0, y0, X1 - X0, 1); }
       // day + date on one line
       c.fillStyle = INK;
-      font("700 15px " + SANS, "condensed"); c.fillText(DAY_SHORT[r.i], X0 + 2, base);
+      font("700 15px " + SANS, "condensed"); c.fillText(DAYS_CS[r.i], X0 + 2, base);
       font("800 25px " + STEN); c.fillText(dm(r.date), X0 + 44, base);
       // venue with highlighter
       if (r.v){
@@ -1188,9 +1193,9 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       }
       c.textAlign = "right";
       font("800 25px " + STEN); c.fillStyle = r.d ? INK : "rgba(29,27,24,.28)";
-      c.fillText(fmtNum(r.d), xExtra - 16, base);
+      c.fillText(num(r.d), xExtra - 16, base);
       c.fillStyle = r.x ? RED : "rgba(168,38,20,.32)";
-      font("800 25px " + STEN); c.fillText((r.x ? "+" : "") + fmtNum(r.x), xExtra + 110, base);
+      font("800 25px " + STEN); c.fillText((r.x ? "+" : "") + num(r.x), xExtra + 110, base);
       font("700 15px " + SANS); c.fillText("h", xExtra + 124, base);
       var pr = priceOf(r);
       if (pr){
@@ -1209,12 +1214,12 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     // month total
     c.fillStyle = INK; c.fillRect(X0, endY, X1 - X0, 2.5);
     var tY = endY + 58;
-    font("800 26px " + SANS, "condensed"); c.fillText("Month total", X0, tY);
-    font("900 40px " + STEN); c.fillText(fmtNum(totD), xDays + 14, tY);
-    var tw = c.measureText(fmtNum(totD)).width;
-    font("700 16px " + SANS, "condensed"); c.fillText(daysWord(totD), xDays + 22 + tw, tY);
-    c.fillStyle = RED; font("900 40px " + STEN); c.fillText("+" + fmtNum(totX), xExtra + 16, tY);
-    var xw = c.measureText("+" + fmtNum(totX)).width;
+    font("800 26px " + SANS, "condensed"); c.fillText("Celkem za měsíc", X0, tY);
+    font("900 40px " + STEN); c.fillText(num(totD), xDays + 14, tY);
+    var tw = c.measureText(num(totD)).width;
+    font("700 16px " + SANS, "condensed"); c.fillText(daysCs(totD), xDays + 22 + tw, tY);
+    c.fillStyle = RED; font("900 40px " + STEN); c.fillText("+" + num(totX), xExtra + 16, tY);
+    var xw = c.measureText("+" + num(totX)).width;
     font("700 16px " + SANS); c.fillText("h", xExtra + 22 + xw, tY);
     c.fillStyle = INK; c.textAlign = "right";
     font("700 16px " + SANS, "condensed"); c.fillText("Kč", X1 - 4, tY);
@@ -1224,7 +1229,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     c.fillStyle = RULE; c.fillRect(X0, tY + 22, X1 - X0, 1);
     var now = new Date();
     font("600 14px " + SANS, "semi-condensed"); c.fillStyle = SOFT;
-    c.fillText("Exported " + dm(now) + now.getFullYear() + " from Work days", X0, tY + 46);
+    c.fillText("Exportováno " + now.getDate() + ". " + (now.getMonth() + 1) + ". " + now.getFullYear() + " z aplikace Work days", X0, tY + 46);
 
     return cv;
   }
@@ -1291,7 +1296,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       .then(function (){ return canvasJpeg(drawMonth(y, m)); })
       .then(function (jpeg){
         var blob = buildPdf(jpeg, Math.round(1240 * 4 / 3), Math.round(1754 * 4 / 3));
-        return savePdf(blob, "Work days " + y + "-" + pad(m + 1) + ".pdf");
+        return savePdf(blob, "Výkaz práce " + y + "-" + pad(m + 1) + ".pdf");
       })
       .then(function (){ exportMsg(MONTHS[m] + " " + y + " PDF is ready."); },
             function (e){
