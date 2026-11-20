@@ -1226,23 +1226,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     font("600 14px " + SANS, "semi-condensed"); c.fillStyle = SOFT;
     c.fillText("Exported " + dm(now) + now.getFullYear() + " from Work days", X0, tY + 46);
 
-    // red month stamp
-    c.save();
-    var sx = CX + CW - 70, sy = CY + CH - 10, SR = 78;
-    c.translate(sx, sy); c.rotate(-13 * Math.PI / 180);
-    c.globalAlpha = .88; c.strokeStyle = RED; c.fillStyle = RED;
-    c.lineWidth = 5; c.beginPath(); c.arc(0, 0, SR, 0, Math.PI * 2); c.stroke();
-    c.lineWidth = 1.8; c.beginPath(); c.arc(0, 0, SR - 24, 0, Math.PI * 2); c.stroke();
-    var ring = MONTHS[m].toUpperCase() + " " + y + "  •  TIME CARD  •  DAYS WORKED  •  ";
-    font("800 12.5px " + SANS, "condensed"); c.textAlign = "center";
-    var step = (Math.PI * 2) / ring.length;
-    for (var q = 0; q < ring.length; q++){
-      c.save(); c.rotate(-Math.PI / 2 + q * step + step / 2); c.translate(0, -(SR - 15)); c.fillText(ring[q], 0, 4); c.restore();
-    }
-    font("900 40px " + STEN); c.fillText(fmtNum(totD), 0, 10);
-    font("800 12px " + SANS, "condensed"); c.fillText(daysWord(totD), 0, 26);
-    font("700 11px " + SANS, "condensed"); c.fillText("+" + fmtNum(totX) + " h extra", 0, 40);
-    c.restore();
     return cv;
   }
 
