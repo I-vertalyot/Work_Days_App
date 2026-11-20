@@ -1227,9 +1227,6 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     font("900 34px " + STEN); c.fillText(money(totP), X1 - 10 - kw2, tY);
     c.textAlign = "left";
     c.fillStyle = RULE; c.fillRect(X0, tY + 22, X1 - X0, 1);
-    var now = new Date();
-    font("600 14px " + SANS, "semi-condensed"); c.fillStyle = SOFT;
-    c.fillText("Exportováno " + now.getDate() + ". " + (now.getMonth() + 1) + ". " + now.getFullYear() + " z aplikace Work days", X0, tY + 46);
 
     return cv;
   }
