@@ -241,6 +241,8 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 .t-extra{padding-left:16px;color:var(--red);font-weight:900;font-size:38px}
 .totals small{margin-left:6px;font-family:var(--sans);font-weight:700;font-size:16px;font-stretch:80%}
 .t-extra small{margin-left:4px}
+.price-cell,.t-price,.cols .c-price{display:none}
+@media (min-width:721px){.price-cell,.cols .c-price{display:flex}.t-price{display:block}}
 
 .fine{
   display:flex;justify-content:space-between;gap:24px;
@@ -421,12 +423,18 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
 
 /* ---------- one shared line per row (computer layout) ---------- */
 @media (min-width:721px){
+  :root{--cols:122px minmax(0,1fr) 164px 182px 128px}
   .row{
     align-items:center;
-    background-image:linear-gradient(var(--rule),var(--rule)),linear-gradient(var(--rule),var(--rule)),linear-gradient(var(--rule),var(--rule));
-    background-size:1px 100%,1px 100%,1px 100%;
-    background-position:122px 0,calc(100% - 346px) 0,calc(100% - 182px) 0;
+    background-image:linear-gradient(var(--rule),var(--rule)),linear-gradient(var(--rule),var(--rule)),linear-gradient(var(--rule),var(--rule)),linear-gradient(var(--rule),var(--rule));
+    background-size:1px 100%,1px 100%,1px 100%,1px 100%;
+    background-position:122px 0,calc(100% - 474px) 0,calc(100% - 310px) 0,calc(100% - 128px) 0;
   }
+  .price-cell{display:flex;align-items:baseline;justify-content:flex-end;padding-right:4px;font-size:26px;font-weight:800;line-height:1}
+  .price-cell small,.t-price small{margin-left:5px;font-family:var(--sans);font-weight:700;font-size:14px;font-stretch:80%}
+  .price-cell.private{opacity:.35}
+  .t-price{text-align:right;padding-right:4px;font-weight:900;font-size:32px}
+  .cols .c-price{justify-content:flex-end;padding-right:4px}
   .row > div + div{border-left:0}
   .row > .day{align-self:center}
   .row > .venue-cell{align-self:stretch;cursor:text}
@@ -576,7 +584,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       </header>
 
       <div class="cols" aria-hidden="true">
-        <span>Day</span><span>Venue</span><span>Days worked</span><span>Extra hours</span>
+        <span>Day</span><span>Venue</span><span>Days worked</span><span>Extra hours</span><span class="c-price">Price</span>
       </div>
 
       <fieldset id="rowsField">
@@ -588,6 +596,7 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
         <span class="t-label">Week total</span>
         <span class="t-days stencil" id="totDays"></span>
         <span class="t-extra stencil" id="totExtra"></span>
+        <span class="t-price stencil" id="totPrice"></span>
       </div>
 
       <footer class="fine">
@@ -808,10 +817,11 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
       var hint = el("span", "xhint"); hint.textContent = "Type 0, 1, 2 or 3";
       xcell.appendChild(xstep); xcell.appendChild(hint);
 
-      li.appendChild(day); li.appendChild(vcell); li.appendChild(dcell); li.appendChild(xcell);
+      var pcell = el("div", "price-cell stencil", { "aria-hidden": "true" });
+      li.appendChild(day); li.appendChild(vcell); li.appendChild(dcell); li.appendChild(xcell); li.appendChild(pcell);
       rowsEl.appendChild(li);
 
-      var r = { li: li, name: name, date: date, venue: venue, hl: hl, holes: holes, val: val, xh: xh, xcell: xcell, xminus: xminus, xplus: xplus };
+      var r = { li: li, name: name, date: date, venue: venue, hl: hl, holes: holes, val: val, xh: xh, xcell: xcell, pcell: pcell, xminus: xminus, xplus: xplus };
       rows.push(r);
 
       venue.addEventListener("input", function (){
@@ -1654,9 +1664,28 @@ fieldset{border:0;margin:0;padding:0;min-width:0}
     paintStamp();
   }
 
+  var DAY_PRICE = 5000, HOUR_PRICE = 400;
+  function moneyFmt(n){ return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "\u2009"); }
+  function priceEl(target, n){
+    target.textContent = moneyFmt(n);
+    var u = el("small"); u.textContent = "Kč"; target.appendChild(u);
+  }
   function paintTotals(){
-    var w = currentWeek(), d = 0, x = 0;
-    w.days.forEach(function (r){ d += r.d; x += r.x; });
+    var w = currentWeek(), d = 0, x = 0, pr = 0;
+    w.days.forEach(function (r, i){
+      d += r.d; x += r.x;
+      var p = r.d * DAY_PRICE + r.x * HOUR_PRICE, priv = isPrivate(r.v);
+      if (!priv) pr += p;
+      var pc = rows[i] && rows[i].pcell;
+      if (pc){
+        if (p) priceEl(pc, p); else pc.textContent = "";
+        pc.classList.toggle("private", priv);
+        pc.title = priv ? "Private day: not counted in the price total or export" : "";
+      }
+    });
+    var tp = $("totPrice");
+    priceEl(tp, pr);
+    tp.setAttribute("aria-label", moneyFmt(pr) + " Kč this week");
     var td = $("totDays");
     td.textContent = fmtNum(d);
     var du = el("small"); du.textContent = daysWord(d); td.appendChild(du);
